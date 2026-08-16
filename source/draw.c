@@ -720,8 +720,7 @@ void DEBUG_printf(const char *format, ...)
     char str[128];
     va_list va;
     va_start(va, format);
-    //vasprintf(str, format, va);
-    vsprintf(str, format, va);
+    vsnprintf(str, sizeof(str), format, va);
     va_end(va);
 
 		if(current_y==1)

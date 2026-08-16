@@ -95,6 +95,12 @@ static u32 launcher_sd_restore_pending = 0;
 static u32 launcher_start_release_suppressed = 0;
 #define LAUNCHER_MAX_FAVOURITES 10
 #define LAUNCHER_FAVOURITE_PATH_LEN 256
+#define LAUNCHER_MAX_RECENTS 10
+#define LAUNCHER_FILENAME_LEN 100
+/* MAX_path_len includes the terminator and launcher filenames are capped at
+   LAUNCHER_FILENAME_LEN - 1 characters. This holds path + slash + filename +
+   terminator exactly. */
+#define LAUNCHER_RECENT_PATH_LEN (MAX_path_len + LAUNCHER_FILENAME_LEN)
 static u32 launcher_favourite_count = 0;
 static u32 launcher_favourite_index = 0;
 static u32 launcher_favourites_cache_valid = 0;
@@ -119,8 +125,11 @@ static u32 launcher_start_title_scroll_frame = 0;
 #define LAUNCHER_VIEW_VERTICAL 2
 #define LAUNCHER_VIEW_LIST_ART 3
 #define LAUNCHER_UPDATE_CAROUSEL_SELECTION 6
-#define LAUNCHER_LIST_ART_CACHE_COUNT 3
+#define LAUNCHER_LIST_ART_CACHE_COUNT 2
 #define LAUNCHER_LIST_ART_IDLE_LOAD_FRAMES 0
+#define LAUNCHER_THUMB_WORKSPACE_SNAKE 0xFC
+#define LAUNCHER_THUMB_WORKSPACE_START_PREVIEW 0xFD
+#define LAUNCHER_THUMB_WORKSPACE_START_SCRATCH 0xFE
 #define LAUNCHER_LIST_ART_INPUT_QUEUE_SIZE 4
 #define LAUNCHER_LIST_ART_BUFFERABLE_KEYS (KEY_A | KEY_B)
 #define LAUNCHER_THUMB_BMP_HEADER 0x36
@@ -137,6 +146,7 @@ static u32 launcher_start_title_scroll_frame = 0;
 #define LAUNCHER_BOOT_TO_FAVOURITES 5
 #define LAUNCHER_BOOT_TO_TOTAL 6
 #define LAUNCHER_LIST_ART_MAX_SPANS 8
+#define LAUNCHER_LIST_ART_SPAN_ROWS 62
 #define LAUNCHER_LIST_ROW_COUNT 10
 #define LAUNCHER_LIST_ROW_HEIGHT 14
 #define LAUNCHER_LIST_ROW_PIXELS (240 * LAUNCHER_LIST_ROW_HEIGHT)
@@ -158,15 +168,15 @@ typedef char LauncherListRowFitsTailScratch[
 typedef char LauncherTitleThumbsEndBeforeTail[
 	(0x19800 + LAUNCHER_THUMB_BMP_HEADER + 120 * 80 * 2 <= LAUNCHER_LIST_ROW_CACHE_TAIL) ? 1 : -1];
 
-static u16 launcher_start_preview_cache[LAUNCHER_START_PREVIEW_CACHE_COUNT][LAUNCHER_START_THUMB_W * LAUNCHER_START_THUMB_H]EWRAM_BSS;
 static char launcher_start_preview_path[LAUNCHER_START_PREVIEW_CACHE_COUNT][LAUNCHER_FAVOURITE_PATH_LEN];
 static u8 launcher_start_preview_valid[LAUNCHER_START_PREVIEW_CACHE_COUNT];
 static u8 launcher_start_preview_mode[LAUNCHER_START_PREVIEW_CACHE_COUNT];
 static u32 launcher_start_preview_index[LAUNCHER_START_PREVIEW_CACHE_COUNT];
-static u8 launcher_custom_thumb_manifest_loaded[2];
-static u8 launcher_custom_thumb_manifest_present[2];
-static u16 launcher_custom_thumb_manifest_count[2];
-static u32 launcher_custom_thumb_manifest_hash[2][LAUNCHER_CUSTOM_THUMB_MANIFEST_MAX]EWRAM_BSS;
+static u8 launcher_custom_thumb_manifest_loaded;
+static u8 launcher_custom_thumb_manifest_present;
+static u8 launcher_custom_thumb_manifest_style = 0xFF;
+static u16 launcher_custom_thumb_manifest_count;
+static u32 launcher_custom_thumb_manifest_hash[LAUNCHER_CUSTOM_THUMB_MANIFEST_MAX]EWRAM_BSS;
 /* FatFs directory objects are too large for the launcher's small IWRAM stack.
    The manifest scan is single-threaded, so one shared EWRAM workspace is enough. */
 static char launcher_custom_thumb_scan_path[32]EWRAM_BSS;
@@ -196,6 +206,7 @@ static void Launcher_DrawFavouriteHeart(int x, int y, u16 colour);
 static char (*Launcher_FavouritesBuffer(void))[LAUNCHER_FAVOURITE_PATH_LEN];
 static s32 Launcher_FindFavouriteFullPath(const char *fullpath);
 static void Launcher_StartPreviewCacheInvalidate(void);
+static void Launcher_ActivateThumbnailWorkspace(u32 mode);
 static u32 Launcher_IsGbaFilename(const TCHAR *pfilename);
 static u32 Launcher_ThumbnailSourceWidth(void);
 static u32 Launcher_ThumbnailSourceHeight(void);
@@ -217,7 +228,6 @@ static void Launcher_BuildThumbCache(u32 center_index);
 static void Launcher_ViewModeCycle(int dir);
 static void Launcher_DrawStartLastTitle(u32 selected);
 static void Launcher_DrawPicClipStride(const u16 *src, int src_stride, int x, int y, int w, int h);
-static void Launcher_InitScaleMaps(void);
 static const u16 *Launcher_NotFoundImage(void);
 static int Launcher_NotFoundWidth(void);
 static int Launcher_NotFoundHeight(void);
@@ -446,25 +456,24 @@ FM_FILE_FS pFilename_buffer[MAX_files]EWRAM_BSS;
 FM_NOR_FS pNorFS[MAX_NOR]EWRAM_BSS;
 FM_Folder_FS pFolder[MAX_folder]EWRAM_BSS;
 
-FM_FILE_FS pFilename_temp;
-
 u32 FAT_table_buffer[FAT_table_size/4]EWRAM_BSS;
-u8 pReadCache [MAX_pReadCache_size]EWRAM_BSS;
+u8 pReadCache[MAX_pReadCache_size]EWRAM_BSS __attribute__((aligned(4)));
+typedef char LauncherSortScratchFitsReadCache[(MAX_files * sizeof(FM_FILE_FS) <= MAX_pReadCache_size) ? 1 : -1];
+typedef char LauncherFolderSortScratchFitsReadCache[(MAX_folder * sizeof(FM_Folder_FS) <= MAX_pReadCache_size) ? 1 : -1];
 static char (*Launcher_FavouritesBuffer(void))[LAUNCHER_FAVOURITE_PATH_LEN]
 {
 	return launcher_favourites_cache;
 }
-/* Keep the persistent UI PCM bounce buffer small so we do not push NOR metadata
-   and other launcher state out of stable EWRAM layout. Longer clips (startup)
-   fall back to the shared cache only when no launcher thumbnails are active yet. */
-static s8 g_ui_audio_buffer[0x2000]EWRAM_BSS __attribute__((aligned(4)));
+/* Keep the persistent UI PCM bounce buffer sized to the largest ordinary UI
+   sound. The longer startup clip uses the existing direct-ROM playback path. */
+static s8 g_ui_audio_buffer[5504]EWRAM_BSS __attribute__((aligned(4)));
 
-char p_recently_play[10][512]EWRAM_BSS;
-static u8 launcher_virtual_gamecode[10][4]EWRAM_BSS;
-static u8 launcher_virtual_gamecode_valid[10]EWRAM_BSS;
+char p_recently_play[LAUNCHER_MAX_RECENTS][LAUNCHER_RECENT_PATH_LEN]EWRAM_BSS;
+static u8 launcher_virtual_gamecode[LAUNCHER_MAX_RECENTS][4]EWRAM_BSS;
+static u8 launcher_virtual_gamecode_valid[LAUNCHER_MAX_RECENTS]EWRAM_BSS;
 TCHAR currentpath[MAX_path_len];//
 TCHAR currentpath_temp[MAX_path_len];
-TCHAR current_filename[200];
+TCHAR current_filename[LAUNCHER_FILENAME_LEN];
 
 static u32 recents_view_active = 0;
 static u32 recents_view_favourites = 0;
@@ -479,9 +488,16 @@ static const char favourites_virtual_path[] = "/Favourites";
 
 TCHAR plugin[100]; //pogoshell plugin
 
-u32 p_folder_select_show_offset[100]EWRAM_BSS;
-u32 p_folder_select_file_select[100]EWRAM_BSS;
+#define LAUNCHER_FOLDER_HISTORY_DEPTH 100
+u16 p_folder_select_show_offset[LAUNCHER_FOLDER_HISTORY_DEPTH]EWRAM_BSS;
+u8 p_folder_select_file_select[LAUNCHER_FOLDER_HISTORY_DEPTH]EWRAM_BSS;
+typedef char LauncherFolderHistoryOffsetFitsU16[(MAX_files + MAX_folder <= 0xFFFF) ? 1 : -1];
+typedef char LauncherFolderHistorySelectionFitsU8[(LAUNCHER_LIST_ROW_COUNT <= 0xFF) ? 1 : -1];
 u32 folder_select;
+static u32 Launcher_FolderHistoryIndex(u32 depth)
+{
+	return (depth < LAUNCHER_FOLDER_HISTORY_DEPTH) ? depth : (LAUNCHER_FOLDER_HISTORY_DEPTH - 1);
+}
 u32 gl_nor_show_offset_saved;
 u32 gl_nor_file_select_saved;
 
@@ -616,7 +632,10 @@ u16 gl_color_btn_clean = RGB(10, 14, 17);
 extern u32 gl_cheat_selected_count;
 extern u32 CheatSelectionAppliesTo(TCHAR *gamefilename, u32 havecht);
 extern void CheatSelectionForget(void);
-u16 SAV_info_buffer [0x200]EWRAM_BSS;
+/* Save metadata and launcher settings are never staged at the same time. Reuse
+   the existing 1 KiB settings workspace instead of reserving a second buffer. */
+extern u16 SET_info_buffer[0x200]EWRAM_BSS;
+#define SAV_info_buffer SET_info_buffer
 /* Only one thumbnail renderer is active at a time. Sharing its prepared-pixel
    workspace gives list + art a deeper cache without increasing permanent RAM. */
 typedef union
@@ -633,26 +652,55 @@ typedef union
 		u16 next[48 * 32];
 	} vertical;
 	u16 list_art[LAUNCHER_LIST_ART_CACHE_COUNT][90 * 60];
+	u16 start_preview[LAUNCHER_START_PREVIEW_CACHE_COUNT][LAUNCHER_START_THUMB_W * LAUNCHER_START_THUMB_H];
 } LauncherThumbnailRenderWorkspace;
 
 static LauncherThumbnailRenderWorkspace launcher_thumbnail_workspace EWRAM_BSS;
+#define launcher_start_preview_cache launcher_thumbnail_workspace.start_preview
 static u8 launcher_thumbnail_workspace_mode = 0xFF;
 #define launcher_side_preview_left launcher_thumbnail_workspace.horizontal.left
 #define launcher_side_preview_right launcher_thumbnail_workspace.horizontal.right
 #define launcher_vert_prev_scaled launcher_thumbnail_workspace.vertical.prev
 #define launcher_vert_selected_scaled launcher_thumbnail_workspace.vertical.selected
 #define launcher_vert_next_scaled launcher_thumbnail_workspace.vertical.next
-static u8 launcher_scale84_x[84]EWRAM_BSS;
-static u8 launcher_scale56_y[56]EWRAM_BSS;
-static u8 launcher_scale48_x[48]EWRAM_BSS;
-static u8 launcher_scale32_y[32]EWRAM_BSS;
-static u8 launcher_scale80_56[56]EWRAM_BSS;
-static u8 launcher_scale80_37[37]EWRAM_BSS;
-static u8 launcher_scale80_32[32]EWRAM_BSS;
-static u8 launcher_scale_maps_ready = 0;
-static u8 launcher_list_art_span_count[160]EWRAM_BSS;
-static u8 launcher_list_art_span_start[160][LAUNCHER_LIST_ART_MAX_SPANS]EWRAM_BSS;
-static u8 launcher_list_art_span_end[160][LAUNCHER_LIST_ART_MAX_SPANS]EWRAM_BSS;
+/* Fixed nearest-neighbour scaling maps live in ROM instead of EWRAM.
+   The shared 56- and 32-entry vertical maps are valid for both 80-pixel
+   and 120-pixel source widths because their source height is 80. */
+static const u8 launcher_scale84_x[84] = {
+	0, 1, 3, 4, 6, 7, 9, 10, 11, 13, 14, 16, 17, 19, 20, 22,
+	23, 24, 26, 27, 29, 30, 32, 33, 34, 36, 37, 39, 40, 42, 43, 44,
+	46, 47, 49, 50, 52, 53, 54, 56, 57, 59, 60, 62, 63, 65, 66, 67,
+	69, 70, 72, 73, 75, 76, 77, 79, 80, 82, 83, 85, 86, 87, 89, 90,
+	92, 93, 95, 96, 97, 99, 100, 102, 103, 105, 106, 108, 109, 110, 112, 113,
+	115, 116, 118, 119
+};
+static const u8 launcher_scale56_y[56] = {
+	0, 1, 3, 4, 6, 7, 9, 10, 11, 13, 14, 16, 17, 19, 20, 22,
+	23, 24, 26, 27, 29, 30, 32, 33, 34, 36, 37, 39, 40, 42, 43, 45,
+	46, 47, 49, 50, 52, 53, 55, 56, 57, 59, 60, 62, 63, 65, 66, 68,
+	69, 70, 72, 73, 75, 76, 78, 79
+};
+static const u8 launcher_scale48_x[48] = {
+	0, 3, 5, 8, 10, 13, 15, 18, 20, 23, 25, 28, 30, 33, 35, 38,
+	41, 43, 46, 48, 51, 53, 56, 58, 61, 63, 66, 68, 71, 73, 76, 78,
+	81, 84, 86, 89, 91, 94, 96, 99, 101, 104, 106, 109, 111, 114, 116, 119
+};
+static const u8 launcher_scale32_y[32] = {
+	0, 3, 5, 8, 10, 13, 15, 18, 20, 23, 25, 28, 31, 33, 36, 38,
+	41, 43, 46, 48, 51, 54, 56, 59, 61, 64, 66, 69, 71, 74, 76, 79
+};
+static const u8 launcher_scale80_37[37] = {
+	0, 2, 4, 7, 9, 11, 13, 15, 18, 20, 22, 24, 26, 29, 31, 33,
+	35, 37, 40, 42, 44, 46, 48, 50, 53, 55, 57, 59, 61, 64, 66, 68,
+	70, 72, 75, 77, 79
+};
+#define launcher_scale80_56 launcher_scale56_y
+#define launcher_scale80_32 launcher_scale32_y
+/* Only the 60 artwork rows plus the upper/lower border rows can contain
+   protected spans. Rows are stored relative to (art_y - 1). */
+static u8 launcher_list_art_span_count[LAUNCHER_LIST_ART_SPAN_ROWS]EWRAM_BSS;
+static u8 launcher_list_art_span_start[LAUNCHER_LIST_ART_SPAN_ROWS][LAUNCHER_LIST_ART_MAX_SPANS]EWRAM_BSS;
+static u8 launcher_list_art_span_end[LAUNCHER_LIST_ART_SPAN_ROWS][LAUNCHER_LIST_ART_MAX_SPANS]EWRAM_BSS;
 static u8 launcher_list_art_span_cache_valid = 0;
 static u8 launcher_list_art_span_sig_x = 0;
 static u8 launcher_list_art_span_sig_y = 0;
@@ -661,14 +709,14 @@ static u8 launcher_list_art_span_sig_h = 0;
 static u8 launcher_list_art_span_sig_border = 0;
 static u8 launcher_list_art_span_sig_rounded = 0;
 static u32 launcher_list_art_scaled_index[LAUNCHER_LIST_ART_CACHE_COUNT] = {
-	0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF
+	0xFFFFFFFF, 0xFFFFFFFF
 };
-static u8 launcher_list_art_scaled_valid[LAUNCHER_LIST_ART_CACHE_COUNT] = {0, 0, 0};
-static u8 launcher_list_art_scaled_has_art[LAUNCHER_LIST_ART_CACHE_COUNT] = {0, 0, 0};
-static u8 launcher_list_art_scaled_sig_w[LAUNCHER_LIST_ART_CACHE_COUNT] = {0, 0, 0};
-static u8 launcher_list_art_scaled_sig_h[LAUNCHER_LIST_ART_CACHE_COUNT] = {0, 0, 0};
-static u8 launcher_list_art_scaled_sig_style[LAUNCHER_LIST_ART_CACHE_COUNT] = {0, 0, 0};
-static u32 launcher_list_art_scaled_age[LAUNCHER_LIST_ART_CACHE_COUNT] = {0, 0, 0};
+static u8 launcher_list_art_scaled_valid[LAUNCHER_LIST_ART_CACHE_COUNT] = {0, 0};
+static u8 launcher_list_art_scaled_has_art[LAUNCHER_LIST_ART_CACHE_COUNT] = {0, 0};
+static u8 launcher_list_art_scaled_sig_w[LAUNCHER_LIST_ART_CACHE_COUNT] = {0, 0};
+static u8 launcher_list_art_scaled_sig_h[LAUNCHER_LIST_ART_CACHE_COUNT] = {0, 0};
+static u8 launcher_list_art_scaled_sig_style[LAUNCHER_LIST_ART_CACHE_COUNT] = {0, 0};
+static u32 launcher_list_art_scaled_age[LAUNCHER_LIST_ART_CACHE_COUNT] = {0, 0};
 static u32 launcher_list_art_cache_clock = 0;
 static u8 launcher_list_art_scaled_selected_slot = 0xFF;
 static u32 launcher_list_art_pending_index = 0xFFFFFFFF;
@@ -706,7 +754,107 @@ static char *Launcher_SettingsTrim(char *text)
 	return text;
 }
 
-static u32 Launcher_SettingsReadValue(const char *key, char *out, u32 out_size)
+#define LAUNCHER_SETTINGS_VALUE_LEN 32
+
+typedef enum
+{
+	LAUNCHER_SETTING_ART_BORDER,
+	LAUNCHER_SETTING_BOOT_TO,
+	LAUNCHER_SETTING_CLEAN_LIST,
+	LAUNCHER_SETTING_CLOCK_FORMAT,
+	LAUNCHER_SETTING_COLOUR,
+	LAUNCHER_SETTING_FAVOURITE_INDEX,
+	LAUNCHER_SETTING_HIDE_SYSTEM_FILES,
+	LAUNCHER_SETTING_HORIZONTAL_SIDE,
+	LAUNCHER_SETTING_LANGUAGE,
+	LAUNCHER_SETTING_LAST_LAUNCH_MODE,
+	LAUNCHER_SETTING_LIST_ART,
+	LAUNCHER_SETTING_LIST_FOLDERS,
+	LAUNCHER_SETTING_QUICK_START_HOTKEY,
+	LAUNCHER_SETTING_RESUME_LAST,
+	LAUNCHER_SETTING_ROUNDED_CORNERS,
+	LAUNCHER_SETTING_SOUNDS,
+	LAUNCHER_SETTING_START_SCREEN,
+	LAUNCHER_SETTING_START_SCREEN_SOURCE,
+	LAUNCHER_SETTING_THEME,
+	LAUNCHER_SETTING_THUMBNAILS,
+	LAUNCHER_SETTING_VERTICAL_SIDE,
+	LAUNCHER_SETTING_VIEW_MODE,
+	LAUNCHER_SETTING_COUNT
+} LauncherSettingId;
+
+static const char *const launcher_setting_keys[LAUNCHER_SETTING_COUNT] =
+{
+	"Art border",
+	"Boot to",
+	"Clean list",
+	"Clock format",
+	"Colour",
+	"Favourite index",
+	"Hide system files",
+	"Horizontal side",
+	"Language",
+	"Last launch mode",
+	"List art",
+	"List folders",
+	"Quick start hotkey",
+	"Resume last",
+	"Rounded corners",
+	"Sounds",
+	"Start screen",
+	"Start screen source",
+	"Theme",
+	"Thumbnails",
+	"Vertical side",
+	"View mode"
+};
+
+static char launcher_setting_values[LAUNCHER_SETTING_COUNT][LAUNCHER_SETTINGS_VALUE_LEN]EWRAM_BSS;
+static u32 launcher_setting_valid_mask;
+static u8 launcher_settings_cache_loaded;
+
+typedef char LauncherSettingsMaskFitsU32[(LAUNCHER_SETTING_COUNT <= 32) ? 1 : -1];
+
+/* Bounded copy without strncpy's full-buffer zero padding. This matters for the
+   launcher's 256- and 356-byte path slots, which are updated frequently. */
+static void Launcher_CopyString(char *dst, u32 dst_size, const char *src)
+{
+	u32 length = 0;
+
+	if(!dst || dst_size == 0)
+		return;
+	if(!src)
+	{
+		dst[0] = '\0';
+		return;
+	}
+	while((length + 1 < dst_size) && src[length])
+		length++;
+	if(length)
+		memcpy(dst, src, length);
+	dst[length] = '\0';
+}
+
+static s32 Launcher_SettingsKeyIndex(const char *key)
+{
+	u32 index;
+	if(!key)
+		return -1;
+	for(index = 0; index < LAUNCHER_SETTING_COUNT; index++)
+	{
+		if(!strcasecmp(key, launcher_setting_keys[index]))
+			return (s32)index;
+	}
+	return -1;
+}
+
+static void Launcher_SettingsInvalidateCache(void)
+{
+	launcher_settings_cache_loaded = 0;
+	launcher_setting_valid_mask = 0;
+}
+
+static void Launcher_SettingsLoadCache(void)
 {
 	FIL f;
 	char line[96];
@@ -714,13 +862,15 @@ static u32 Launcher_SettingsReadValue(const char *key, char *out, u32 out_size)
 	char *comment;
 	char *name;
 	char *value;
+	s32 key_index;
 
-	if(!key || !out || (out_size == 0))
-		return 0;
+	if(launcher_settings_cache_loaded)
+		return;
 
-	out[0] = '\0';
+	launcher_settings_cache_loaded = 1;
+	launcher_setting_valid_mask = 0;
 	if(f_open(&f, SETTINGS_FILE, FA_READ) != FR_OK)
-		return 0;
+		return;
 
 	while(f_gets(line, sizeof(line), &f) != NULL)
 	{
@@ -741,17 +891,30 @@ static u32 Launcher_SettingsReadValue(const char *key, char *out, u32 out_size)
 			*comment = '\0';
 		value = Launcher_SettingsTrim(value);
 		name = Launcher_SettingsTrim(name);
-		if(!strcasecmp(name, key))
+		key_index = Launcher_SettingsKeyIndex(name);
+		if((key_index >= 0) && !(launcher_setting_valid_mask & (1UL << key_index)))
 		{
-			strncpy(out, value, out_size - 1);
-			out[out_size - 1] = '\0';
-			f_close(&f);
-			return 1;
+			Launcher_CopyString(launcher_setting_values[key_index],
+				sizeof(launcher_setting_values[key_index]), value);
+			launcher_setting_valid_mask |= 1UL << key_index;
 		}
 	}
 
 	f_close(&f);
-	return 0;
+}
+
+static u32 Launcher_SettingsReadValue(LauncherSettingId key_id, char *out, u32 out_size)
+{
+	if(!out || (out_size == 0) || ((u32)key_id >= LAUNCHER_SETTING_COUNT))
+		return 0;
+	out[0] = '\0';
+
+	Launcher_SettingsLoadCache();
+	if(!(launcher_setting_valid_mask & (1UL << (u32)key_id)))
+		return 0;
+
+	Launcher_CopyString(out, out_size, launcher_setting_values[(u32)key_id]);
+	return 1;
 }
 
 static void Launcher_FormatClock(char *out, u32 out_size, u8 HH, u8 MM, u8 SS)
@@ -884,11 +1047,11 @@ static void Launcher_LoadTheme(void)
 	launcher_dark_mode = 0;
 	launcher_custom_theme_mode = 0;
 	memset(buf, 0, sizeof(buf));
-	if(Launcher_SettingsReadValue("Colour", buf, sizeof(buf)))
+	if(Launcher_SettingsReadValue(LAUNCHER_SETTING_COLOUR, buf, sizeof(buf)))
 	{
 		launcher_theme_index = Launcher_FindThemeByName(buf);
 	}
-	else if(Launcher_SettingsReadValue("Theme", buf, sizeof(buf)))
+	else if(Launcher_SettingsReadValue(LAUNCHER_SETTING_THEME, buf, sizeof(buf)))
 	{
 		if(Launcher_IsThemeModeName(buf))
 			Launcher_SetThemeModeName(buf);
@@ -911,7 +1074,7 @@ static void Launcher_LoadTheme(void)
 		}
 		f_close(&f);
 	}
-	if(Launcher_SettingsReadValue("Theme", buf, sizeof(buf)) && Launcher_IsThemeModeName(buf))
+	if(Launcher_SettingsReadValue(LAUNCHER_SETTING_THEME, buf, sizeof(buf)) && Launcher_IsThemeModeName(buf))
 		Launcher_SetThemeModeName(buf);
 	Launcher_ApplyThemeColours();
 }
@@ -1068,6 +1231,38 @@ static const u16 *Launcher_GetThemeTopForBase(const u16 *base)
 #endif
 }
 
+static void Launcher_DrawThemeTopbarClip(const u16 *palette, u16 x, u16 y, u16 w, u16 h)
+{
+	const u8 *pattern;
+	u16 *line = (u16*)pReadCache;
+	u16 x_end;
+	u16 y_end;
+	u16 yy;
+	u16 xx;
+
+	if(!palette || !w || !h || x >= 240 || y >= LAUNCHER_TOP_BAR_HEIGHT)
+		return;
+	x_end = x + w;
+	if(x_end > 240 || x_end < x)
+		x_end = 240;
+	y_end = y + h;
+	if(y_end > LAUNCHER_TOP_BAR_HEIGHT || y_end < y)
+		y_end = LAUNCHER_TOP_BAR_HEIGHT;
+	pattern = launcher_topbar_patterns[(palette[16] < LAUNCHER_TOPBAR_PATTERN_COUNT) ? palette[16] : 0];
+
+	for(yy = y; yy < y_end; yy++)
+	{
+		u32 pixel = (u32)yy * 240 + x;
+		for(xx = x; xx < x_end; xx++, pixel++)
+		{
+			u8 packed = pattern[pixel >> 1];
+			u8 index = (pixel & 1) ? (packed >> 4) : (packed & 0x0F);
+			line[xx - x] = palette[(index < palette[17]) ? index : 0];
+		}
+		dmaCopy(line, VideoBuffer + (u32)yy * 240 + x, (x_end - x) * 2);
+	}
+}
+
 static const u16 *launcher_current_topbar_bg = 0;
 static const u16 *launcher_current_theme_bg = 0;
 static char launcher_counter_last_msg[20] = "";
@@ -1134,7 +1329,7 @@ static void Launcher_DrawThemeBGFull(const u16 *base)
 	if(top && (top == launcher_current_topbar_bg))
 	{
 		ClearWithBG((u16*)base, 0, LAUNCHER_TOP_BAR_HEIGHT, 240, 160 - LAUNCHER_TOP_BAR_HEIGHT, 1);
-		ClearWithBG((u16*)top, 70, 2, 170, 15, 1);
+		Launcher_DrawThemeTopbarClip(top, 70, 2, 170, 15);
 		launcher_current_theme_bg = base;
 		return;
 	}
@@ -1148,7 +1343,7 @@ static void Launcher_DrawThemeBGFull(const u16 *base)
 
 	DrawPic((u16*)base, 0, 0, 240, 160, 0, 0, 1);
 	if(top)
-		DrawPic((u16*)top, 0, 0, 240, LAUNCHER_TOP_BAR_HEIGHT, 0, 0, 1);
+		Launcher_DrawThemeTopbarClip(top, 0, 0, 240, LAUNCHER_TOP_BAR_HEIGHT);
 	launcher_current_topbar_bg = top;
 	launcher_current_theme_bg = base;
 	launcher_counter_valid = 0;
@@ -1172,7 +1367,7 @@ static void Launcher_ClearWithThemeBG(const u16 *base, u16 x, u16 y, u16 w, u16 
 			top_h = LAUNCHER_TOP_BAR_HEIGHT - y;
 
 		if(top_h)
-			ClearWithBG((u16*)top, x, y, w, top_h, 1);
+			Launcher_DrawThemeTopbarClip(top, x, y, w, top_h);
 
 		if(y_end > LAUNCHER_TOP_BAR_HEIGHT)
 		{
@@ -1220,7 +1415,7 @@ static void Launcher_ClearWithThemeBG(const u16 *base, u16 x, u16 y, u16 w, u16 
 #define UI_SOUNDCNT_A_TIMER0 0x0000
 #define UI_SOUNDCNT_A_RESET 0x0800
 #define UI_MASTER_ENABLE    0x0080
-#define UI_AUDIO_BUFFER_SIZE 0x2000
+#define UI_AUDIO_BUFFER_SIZE 5504
 #define UI_AUDIO_MAX_SAMPLES 65520
 
 typedef enum
@@ -1681,7 +1876,7 @@ static u32 Launcher_GetVirtualFileInfo(const TCHAR *path, const TCHAR *name, u32
 
 u32 Stage_kernel_update(const TCHAR *src_name)
 {
-    TCHAR src_path[MAX_path_len + 200];
+    TCHAR src_path[LAUNCHER_RECENT_PATH_LEN];
     const TCHAR *tmp_path = "/ezkernelnew.tmp";
     const TCHAR *dst_path = "/ezkernelnew.bin";
     u32 src_size = 0;
@@ -1929,10 +2124,11 @@ static void Launcher_ListArtPrepareSpanCache(void)
 	launcher_list_art_span_sig_rounded == (u8)rounded)
 		return;
 
-	for(row = 0; row < 160; row++)
+	for(row = 0; row < LAUNCHER_LIST_ART_SPAN_ROWS; row++)
 	{
 		LauncherListArtSpan spans[LAUNCHER_LIST_ART_MAX_SPANS];
-		u32 count = Launcher_ListArtProtectedSpansAtYRaw((int)row, spans, LAUNCHER_LIST_ART_MAX_SPANS);
+		int screen_y = (y - 1) + (int)row;
+		u32 count = Launcher_ListArtProtectedSpansAtYRaw(screen_y, spans, LAUNCHER_LIST_ART_MAX_SPANS);
 		u32 i;
 
 		launcher_list_art_span_count[row] = (u8)count;
@@ -1950,6 +2146,37 @@ static void Launcher_ListArtPrepareSpanCache(void)
 	launcher_list_art_span_sig_border = (u8)launcher_art_border_mode;
 	launcher_list_art_span_sig_rounded = (u8)rounded;
 	launcher_list_art_span_cache_valid = 1;
+}
+
+static int Launcher_ListArtSpanCacheIndex(int screen_y)
+{
+	int relative_y;
+
+	if(!launcher_list_art_span_cache_valid)
+		return -1;
+	relative_y = screen_y - ((int)launcher_list_art_span_sig_y - 1);
+	if(relative_y < 0 || relative_y >= LAUNCHER_LIST_ART_SPAN_ROWS)
+		return -1;
+	return relative_y;
+}
+
+static u32 Launcher_ListArtSpanCacheGet(int screen_y, const u8 **starts, const u8 **ends)
+{
+	int row = Launcher_ListArtSpanCacheIndex(screen_y);
+
+	if(starts) *starts = 0;
+	if(ends) *ends = 0;
+	if(row < 0)
+		return 0;
+	if(starts) *starts = launcher_list_art_span_start[row];
+	if(ends) *ends = launcher_list_art_span_end[row];
+	return launcher_list_art_span_count[row];
+}
+
+static u32 Launcher_ListArtSpanCountAtY(int screen_y)
+{
+	int row = Launcher_ListArtSpanCacheIndex(screen_y);
+	return (row < 0) ? 0 : launcher_list_art_span_count[row];
 }
 
 static u32 Launcher_ShowListMetaForRow(u32 haveThumbnail, u32 line, u32 selected)
@@ -2116,11 +2343,7 @@ void Show_ICON_filename_SD(u32 show_offset,u32 file_select,u32 haveThumbnail)
 		if(!Launcher_ShowListMetaForRow(haveThumbnail, line, line == file_select))
 		{}
 		else
-		{
-			char msg[20];
-			sprintf(msg,"%s","DIR");
-			DrawHZText12(msg,0,221,y_offset + line*14, row_color,1);
-		}
+		DrawHZText12("DIR",0,221,y_offset + line*14, row_color,1);
 	}
 
 
@@ -2194,8 +2417,8 @@ static void Launcher_CopySDListRowBuffer(u16 *row_buffer, u32 showy, u32 line, u
 		if(haveThumbnail && Launcher_IsListArtMode() && launcher_list_art_selected_has_art)
 		{
 			u32 span_count;
-			u8 *span_start;
-			u8 *span_end;
+			const u8 *span_start;
+			const u8 *span_end;
 			u32 span_index = 0;
 			u32 x = copy_x;
 			u32 end = copy_x + copy_w;
@@ -2203,9 +2426,7 @@ static void Launcher_CopySDListRowBuffer(u16 *row_buffer, u32 showy, u32 line, u
 			Launcher_ListArtPrepareSpanCache();
 			if(screen_y >= 160)
 				continue;
-			span_count = launcher_list_art_span_count[screen_y];
-			span_start = launcher_list_art_span_start[screen_y];
-			span_end = launcher_list_art_span_end[screen_y];
+			span_count = Launcher_ListArtSpanCacheGet((int)screen_y, &span_start, &span_end);
 			if(span_count == 0)
 			{
 				dmaCopy(row_buffer + y * 240 + copy_x,
@@ -2476,6 +2697,10 @@ static void Launcher_CopyListArtScrollLine(int dest_y, int source_y,
 	u32 dest_span = 0;
 	u32 source_span = 0;
 	u32 x = 0;
+	const u8 *dest_start = 0;
+	const u8 *dest_end = 0;
+	const u8 *source_start = 0;
+	const u8 *source_end = 0;
 	u16 *cached_line;
 	u32 row_line;
 	u32 row_y;
@@ -2491,9 +2716,9 @@ static void Launcher_CopyListArtScrollLine(int dest_y, int source_y,
 	cached_line += row_y * 240;
 
 	if(new_has_art)
-		dest_count = launcher_list_art_span_count[dest_y];
+		dest_count = Launcher_ListArtSpanCacheGet(dest_y, &dest_start, &dest_end);
 	if(old_has_art)
-		source_count = launcher_list_art_span_count[source_y];
+		source_count = Launcher_ListArtSpanCacheGet(source_y, &source_start, &source_end);
 	if(dest_count == 0 && source_count == 0)
 	{
 		Launcher_DmaCopyAligned32(VideoBuffer + source_y * 240,
@@ -2508,30 +2733,30 @@ static void Launcher_CopyListArtScrollLine(int dest_y, int source_y,
 		u32 next = 240;
 
 		while(dest_span < dest_count &&
-		launcher_list_art_span_end[dest_y][dest_span] <= x)
+		dest_end[dest_span] <= x)
 			dest_span++;
 		while(source_span < source_count &&
-		launcher_list_art_span_end[source_y][source_span] <= x)
+		source_end[source_span] <= x)
 			source_span++;
 
 		dest_active = dest_span < dest_count &&
-		launcher_list_art_span_start[dest_y][dest_span] <= x;
+		dest_start[dest_span] <= x;
 		source_active = source_span < source_count &&
-		launcher_list_art_span_start[source_y][source_span] <= x;
+		source_start[source_span] <= x;
 
 		if(dest_span < dest_count)
 		{
 			u32 boundary = dest_active ?
-			launcher_list_art_span_end[dest_y][dest_span] :
-			launcher_list_art_span_start[dest_y][dest_span];
+			dest_end[dest_span] :
+			dest_start[dest_span];
 			if(boundary < next)
 				next = boundary;
 		}
 		if(source_span < source_count)
 		{
 			u32 boundary = source_active ?
-			launcher_list_art_span_end[source_y][source_span] :
-			launcher_list_art_span_start[source_y][source_span];
+			source_end[source_span] :
+			source_start[source_span];
 			if(boundary < next)
 				next = boundary;
 		}
@@ -2574,8 +2799,8 @@ static void __attribute__((unused)) Launcher_ScrollListArtBodySegmented(int dire
 
 			for(y = 0; y < LAUNCHER_LIST_ROW_HEIGHT; y++)
 			{
-				if((new_has_art && launcher_list_art_span_count[dest_y + y]) ||
-				(old_has_art && launcher_list_art_span_count[source_y + y]))
+				if((new_has_art && Launcher_ListArtSpanCountAtY(dest_y + y)) ||
+				(old_has_art && Launcher_ListArtSpanCountAtY(source_y + y)))
 				{
 					needs_segments = 1;
 					break;
@@ -2604,8 +2829,8 @@ static void __attribute__((unused)) Launcher_ScrollListArtBodySegmented(int dire
 
 			for(y = 0; y < LAUNCHER_LIST_ROW_HEIGHT; y++)
 			{
-				if((new_has_art && launcher_list_art_span_count[dest_y + y]) ||
-				(old_has_art && launcher_list_art_span_count[source_y + y]))
+				if((new_has_art && Launcher_ListArtSpanCountAtY(dest_y + y)) ||
+				(old_has_art && Launcher_ListArtSpanCountAtY(source_y + y)))
 				{
 					needs_segments = 1;
 					break;
@@ -3050,10 +3275,8 @@ void IWRAM_CODE Refresh_filename(u32 show_offset,u32 file_select,u32 updown,u32 
 		{ char list_name1[256]; Launcher_GetListDisplayName(pFolder[show_offset+xx1].filename, list_name1, sizeof(list_name1)); DrawHZText12(list_name1, char_num1, 1+16, showy1, name_color1,1); }
 		{ char fav_name2[256]; Launcher_GetSDListDisplayNameWithFavourite(0, fav_name2, sizeof(fav_name2)); DrawHZText12(fav_name2, char_num2, 1+16, showy2, name_color2,1); }
 
-		if(!launcher_clean_list && char_num1==32){
-			sprintf(msg,"%s","DIR");
-			DrawHZText12(msg,0,221,showy1, name_color1,1);
-		}
+		if(!launcher_clean_list && char_num1==32)
+			DrawHZText12("DIR",0,221,showy1, name_color1,1);
 		if(!launcher_clean_list && char_num2==32){
 			Get_file_size(0,msg);
 			DrawHZText12(msg,0,208,showy2, name_color2,1);
@@ -3064,23 +3287,18 @@ void IWRAM_CODE Refresh_filename(u32 show_offset,u32 file_select,u32 updown,u32 
 		{ char list_name1[256]; Launcher_GetListDisplayName(pFolder[show_offset+xx1].filename, list_name1, sizeof(list_name1)); DrawHZText12(list_name1, char_num1, 1+16, showy1, name_color1,1); }
 		{ char list_name2[256]; Launcher_GetListDisplayName(pFolder[show_offset+xx2].filename, list_name2, sizeof(list_name2)); DrawHZText12(list_name2, char_num2, 1+16, showy2, name_color2,1); }
 
-		sprintf(msg,"%s","DIR");
-		if(!launcher_clean_list && char_num1==32){
-			DrawHZText12(msg,0,221,showy1, name_color1,1);
-		}
-		if(!launcher_clean_list && char_num2==32){
-			DrawHZText12(msg,0,221,showy2, name_color2,1);
-		}
+		if(!launcher_clean_list && char_num1==32)
+			DrawHZText12("DIR",0,221,showy1, name_color1,1);
+		if(!launcher_clean_list && char_num2==32)
+			DrawHZText12("DIR",0,221,showy2, name_color2,1);
 	}
 	else if((file_select == need_show_folder)&& (updown ==2))
 	{
 		{ char list_name1[256]; Launcher_GetListDisplayName(pFolder[show_offset+xx1].filename, list_name1, sizeof(list_name1)); DrawHZText12(list_name1, char_num1, 1+16, showy1, name_color1,1); }
 		{ char fav_name2[256]; Launcher_GetSDListDisplayNameWithFavourite(0, fav_name2, sizeof(fav_name2)); DrawHZText12(fav_name2, char_num2, 1+16, showy2, name_color2,1); }
 
-		if(!launcher_clean_list && char_num1==32){
-			sprintf(msg,"%s","DIR");
-			DrawHZText12(msg,0,221,showy1, name_color1,1);
-		}
+		if(!launcher_clean_list && char_num1==32)
+			DrawHZText12("DIR",0,221,showy1, name_color1,1);
 		if(!recents_view_active && !launcher_clean_list && char_num2==32){
 			Get_file_size(0,msg);
 			DrawHZText12(msg,0,208,showy2, name_color2,1);
@@ -3660,65 +3878,67 @@ void Show_game_name(u32 total,u32 Select)
 	}
 }
 //---------------------------------------------------------------------------------
-u32  get_count(void)
+u32 get_count(void)
 {
 	u32 res;
-	u32 count=0;
-	char buf[512];
-	res = f_open(&gfile,"/SYSTEM/RECENT.TXT", FA_READ);
-	if(res == FR_OK)//have a play file
+	u32 count = 0;
+	char buf[LAUNCHER_RECENT_PATH_LEN + 2];
+
+	res = f_open(&gfile, "/SYSTEM/RECENT.TXT", FA_READ);
+	if(res != FR_OK)
+		return 0;
+
+	f_lseek(&gfile, 0x0);
+	while((count < LAUNCHER_MAX_RECENTS) && (f_gets(buf, sizeof(buf), &gfile) != NULL))
 	{
-		f_lseek(&gfile, 0x0);
-		memset(buf,0x00,512);
-		while(f_gets(buf, 512, &gfile) != NULL)
-		{
-			//DrawHZText12(buf, 32, 1+16, showy, name_color,1);
-			Trim(buf);
-			if(buf[0] != '/') break;
-			memset(p_recently_play[count],0x00,512);
-			dmaCopy(buf,&(p_recently_play[count]), 512);
-			memset(buf,0x00,512);
-			count++;
-			if(count==10)break;
-		}
+		Trim(buf);
+		if(buf[0] != '/')
+			break;
+		/* Paths longer than the launcher's supported path + filename limits
+		   cannot be restored safely, so ignore them instead of truncating. */
+		if(strlen(buf) >= LAUNCHER_RECENT_PATH_LEN)
+			continue;
+		Launcher_CopyString(p_recently_play[count], sizeof(p_recently_play[count]), buf);
+		count++;
 	}
 	f_close(&gfile);
 	return count;
 }
 //---------------------------------------------------------------------------------
-static u32 Recent_GetPathAt(u32 index, TCHAR *out_path, u32 out_path_size, TCHAR *out_name, u32 out_name_size)
+static u32 Recent_GetLoadedPathAt(u32 index, u32 count, TCHAR *out_path, u32 out_path_size,
+	TCHAR *out_name, u32 out_name_size)
 {
 	char *p;
+
 	if(out_path_size == 0 || out_name_size == 0)
 		return 0;
 	out_path[0] = '\0';
 	out_name[0] = '\0';
-	if(recents_view_active && recents_view_favourites)
-	{
-		Launcher_LoadFavourites();
-		if(index >= launcher_favourite_count)
-			return 0;
-	}
-	else if(index >= get_count())
+	if(index >= count || index >= LAUNCHER_MAX_RECENTS)
 		return 0;
 	p = strrchr(p_recently_play[index], '/');
-	if(!p)
+	if(!p || !p[1])
 		return 0;
 	if(p == p_recently_play[index])
 	{
-		strncpy(out_path, "/", out_path_size - 1);
-		out_path[out_path_size - 1] = '\0';
+		Launcher_CopyString(out_path, out_path_size, "/");
 	}
 	else
 	{
 		u32 copy_len = (u32)(p - p_recently_play[index]);
-		if(copy_len > out_path_size - 1) copy_len = out_path_size - 1;
-		strncpy(out_path, p_recently_play[index], copy_len);
+		if(copy_len > out_path_size - 1)
+			copy_len = out_path_size - 1;
+		memcpy(out_path, p_recently_play[index], copy_len);
 		out_path[copy_len] = '\0';
 	}
-	strncpy(out_name, p + 1, out_name_size - 1);
-	out_name[out_name_size - 1] = '\0';
-	return (out_name[0] != '\0');
+	Launcher_CopyString(out_name, out_name_size, p + 1);
+	return 1;
+}
+
+static u32 Recent_GetPathAt(u32 index, TCHAR *out_path, u32 out_path_size, TCHAR *out_name, u32 out_name_size)
+{
+	u32 count = get_count();
+	return Recent_GetLoadedPathAt(index, count, out_path, out_path_size, out_name, out_name_size);
 }
 
 
@@ -3751,8 +3971,7 @@ static u32 Launcher_SplitFullPath(const char *fullpath, TCHAR *out_path, u32 out
 		return 0;
 	if(p == fullpath)
 	{
-		strncpy(out_path, "/", out_path_size - 1);
-		out_path[out_path_size - 1] = '\0';
+		Launcher_CopyString(out_path, out_path_size, "/");
 	}
 	else
 	{
@@ -3762,15 +3981,14 @@ static u32 Launcher_SplitFullPath(const char *fullpath, TCHAR *out_path, u32 out
 		strncpy(out_path, fullpath, copy_len);
 		out_path[copy_len] = '\0';
 	}
-	strncpy(out_name, p + 1, out_name_size - 1);
-	out_name[out_name_size - 1] = '\0';
+	Launcher_CopyString(out_name, out_name_size, p + 1);
 	return out_name[0] != '\0';
 }
 
 static void Launcher_LoadFavouriteIndex(void)
 {
 	char buf[16];
-	if(Launcher_SettingsReadValue("Favourite index", buf, sizeof(buf)))
+	if(Launcher_SettingsReadValue(LAUNCHER_SETTING_FAVOURITE_INDEX, buf, sizeof(buf)))
 	{
 		launcher_favourite_index = atoi(buf);
 	}
@@ -3802,7 +4020,6 @@ static void Launcher_LoadFavourites(void)
 	launcher_favourite_count = 0;
 	launcher_favourites_cache_valid = 0;
 	Launcher_StartPreviewCacheInvalidate();
-	memset(Launcher_FavouritesBuffer(), 0x00, LAUNCHER_MAX_FAVOURITES * LAUNCHER_FAVOURITE_PATH_LEN);
 	res = f_open(&gfile, FAVOURITES_FILE, FA_READ);
 	if(res == FR_OK)
 	{
@@ -3812,8 +4029,8 @@ static void Launcher_LoadFavourites(void)
 			Trim(buf);
 			if(buf[0] != '/')
 				continue;
-			strncpy(Launcher_FavouritesBuffer()[launcher_favourite_count], buf, LAUNCHER_FAVOURITE_PATH_LEN - 1);
-			Launcher_FavouritesBuffer()[launcher_favourite_count][LAUNCHER_FAVOURITE_PATH_LEN - 1] = '\0';
+			Launcher_CopyString(Launcher_FavouritesBuffer()[launcher_favourite_count],
+				LAUNCHER_FAVOURITE_PATH_LEN, buf);
 			launcher_favourite_count++;
 		}
 		f_close(&gfile);
@@ -3856,8 +4073,8 @@ static u32 Launcher_AppendFavouriteFullPath(const char *fullpath)
 		return 1;
 	if(launcher_favourite_count >= LAUNCHER_MAX_FAVOURITES)
 		return 0;
-	strncpy(Launcher_FavouritesBuffer()[launcher_favourite_count], fullpath, LAUNCHER_FAVOURITE_PATH_LEN - 1);
-	Launcher_FavouritesBuffer()[launcher_favourite_count][LAUNCHER_FAVOURITE_PATH_LEN - 1] = '\0';
+	Launcher_CopyString(Launcher_FavouritesBuffer()[launcher_favourite_count],
+		LAUNCHER_FAVOURITE_PATH_LEN, fullpath);
 	launcher_favourite_index = launcher_favourite_count;
 	launcher_favourite_count++;
 	Launcher_SaveFavourites();
@@ -3881,18 +4098,17 @@ static s32 Launcher_FindFavouriteFullPath(const char *fullpath)
 
 static u32 Launcher_IsFavouritePathName(const TCHAR *path, const TCHAR *name)
 {
-	char full[512];
+	char full[LAUNCHER_RECENT_PATH_LEN];
 	Launcher_BuildFullPath(path, name, full, sizeof(full));
 	return Launcher_FindFavouriteFullPath(full) >= 0;
 }
 
 static u32 Launcher_IsLaunchableFilename(const TCHAR *name)
 {
-	TCHAR temp[200];
+	TCHAR temp[LAUNCHER_FILENAME_LEN];
 	if(!name || !name[0])
 		return 0;
-	strncpy(temp, name, sizeof(temp) - 1);
-	temp[sizeof(temp) - 1] = '\0';
+	Launcher_CopyString(temp, sizeof(temp), name);
 	return Check_file_type(temp) != 0xff;
 }
 
@@ -3911,7 +4127,7 @@ static u32 Launcher_GetSDFileFullPath(u32 absolute_index, char *out, u32 out_siz
 
 static u32 Launcher_IsFavouriteSDIndex(u32 absolute_index)
 {
-	char full[512];
+	char full[LAUNCHER_RECENT_PATH_LEN];
 	if(!Launcher_GetSDFileFullPath(absolute_index, full, sizeof(full)))
 		return 0;
 	return Launcher_FindFavouriteFullPath(full) >= 0;
@@ -3924,14 +4140,14 @@ static void Launcher_ReadStartSource(void)
 	launcher_start_screen_off = 0;
 
 	memset(buf, 0, sizeof(buf));
-	if(Launcher_SettingsReadValue("Start screen", buf, sizeof(buf)))
+	if(Launcher_SettingsReadValue(LAUNCHER_SETTING_START_SCREEN, buf, sizeof(buf)))
 	{
 		if((buf[0] == '0') || !strcasecmp(buf, "Off"))
 			launcher_start_screen_off = 1;
 	}
 
 	memset(buf, 0, sizeof(buf));
-	if(Launcher_SettingsReadValue("Start screen source", buf, sizeof(buf)))
+	if(Launcher_SettingsReadValue(LAUNCHER_SETTING_START_SCREEN_SOURCE, buf, sizeof(buf)))
 	{
 		if((buf[0] == '2') || !strcasecmp(buf, "Off"))
 			launcher_start_screen_off = 1;
@@ -3960,9 +4176,9 @@ static void Launcher_ReadBootToSetting(void)
 	launcher_boot_target = LAUNCHER_BOOT_TO_START;
 	gl_resume_last_on = 0;
 	memset(buf, 0, sizeof(buf));
-	if(!Launcher_SettingsReadValue("Boot to", buf, sizeof(buf)))
+	if(!Launcher_SettingsReadValue(LAUNCHER_SETTING_BOOT_TO, buf, sizeof(buf)))
 	{
-		if(Launcher_SettingsReadValue("Resume last", buf, sizeof(buf)) &&
+		if(Launcher_SettingsReadValue(LAUNCHER_SETTING_RESUME_LAST, buf, sizeof(buf)) &&
 		((buf[0] == '1') || !strcasecmp(buf, "On") || !strcasecmp(buf, DSTEXT_ON)))
 		{
 			launcher_boot_target = LAUNCHER_BOOT_TO_LAST_GAME;
@@ -4212,8 +4428,7 @@ static u32 Launcher_StartPreviewIndexPath(u32 index, TCHAR *out_path, u32 out_pa
 		return 0;
 	if(out_full && out_full_size)
 	{
-		strncpy(out_full, Launcher_FavouritesBuffer()[index], out_full_size - 1);
-		out_full[out_full_size - 1] = '\0';
+		Launcher_CopyString(out_full, out_full_size, Launcher_FavouritesBuffer()[index]);
 	}
 	return 1;
 }
@@ -4221,7 +4436,7 @@ static u32 Launcher_StartPreviewIndexPath(u32 index, TCHAR *out_path, u32 out_pa
 static u32 Launcher_StartPreviewEnsureCached(u32 index)
 {
 	TCHAR path[MAX_path_len];
-	TCHAR name[200];
+	TCHAR name[LAUNCHER_FILENAME_LEN];
 	TCHAR saved_path[MAX_path_len];
 	char full[LAUNCHER_FAVOURITE_PATH_LEN];
 	u32 slot;
@@ -4236,6 +4451,8 @@ static u32 Launcher_StartPreviewEnsureCached(u32 index)
 	memset(name, 0, sizeof(name));
 	memset(saved_path, 0, sizeof(saved_path));
 	memset(full, 0, sizeof(full));
+	Launcher_ActivateThumbnailWorkspace(LAUNCHER_THUMB_WORKSPACE_START_PREVIEW);
+
 	if(!Launcher_StartPreviewIndexPath(index, path, sizeof(path), name, sizeof(name), full, sizeof(full)))
 		return 0;
 	if(!Launcher_IsGbaFilename(name))
@@ -4250,8 +4467,8 @@ static u32 Launcher_StartPreviewEnsureCached(u32 index)
 	launcher_start_preview_valid[slot] = 0;
 	launcher_start_preview_mode[slot] = 0;
 	launcher_start_preview_index[slot] = index;
-	strncpy(launcher_start_preview_path[slot], full, sizeof(launcher_start_preview_path[slot]) - 1);
-	launcher_start_preview_path[slot][sizeof(launcher_start_preview_path[slot]) - 1] = '\0';
+	Launcher_CopyString(launcher_start_preview_path[slot],
+		sizeof(launcher_start_preview_path[slot]), full);
 
 	f_getcwd(saved_path, sizeof(saved_path) / sizeof(*saved_path));
 	if(f_chdir(path) == FR_OK)
@@ -4334,32 +4551,27 @@ static u32 Build_favourites_virtual_list(void)
 	u32 count = 0;
 	u32 i;
 	TCHAR path_part[MAX_path_len];
-	TCHAR name[200];
-	u32 size = 0;
+	TCHAR name[LAUNCHER_FILENAME_LEN];
+	u32 size;
 
 	Launcher_LoadFavourites();
-	memset(pFilename_buffer, 0x00, sizeof(FM_FILE_FS) * MAX_files);
-	memset(p_recently_play, 0x00, sizeof(p_recently_play));
 	memset(launcher_virtual_gamecode, 0, sizeof(launcher_virtual_gamecode));
 	memset(launcher_virtual_gamecode_valid, 0, sizeof(launcher_virtual_gamecode_valid));
-	for(i = 0; (i < launcher_favourite_count) && (count < MAX_files); i++)
+	for(i = 0; (i < launcher_favourite_count) && (count < LAUNCHER_MAX_RECENTS); i++)
 	{
 		if(!Launcher_SplitFullPath(Launcher_FavouritesBuffer()[i], path_part, sizeof(path_part), name, sizeof(name)))
 			continue;
-		strncpy(p_recently_play[count], Launcher_FavouritesBuffer()[i], sizeof(p_recently_play[count]) - 1);
-		p_recently_play[count][sizeof(p_recently_play[count]) - 1] = '\0';
-		strncpy(pFilename_buffer[count].filename, name, sizeof(pFilename_buffer[count].filename) - 1);
-		pFilename_buffer[count].filename[sizeof(pFilename_buffer[count].filename) - 1] = '\0';
+		memset(&pFilename_buffer[count], 0, sizeof(pFilename_buffer[count]));
+		Launcher_CopyString(p_recently_play[count], sizeof(p_recently_play[count]),
+			Launcher_FavouritesBuffer()[i]);
+		Launcher_CopyString(pFilename_buffer[count].filename,
+			sizeof(pFilename_buffer[count].filename), name);
+		size = 0;
 		if(Launcher_GetVirtualFileInfo(Launcher_FavouritesBuffer()[i], name, &size, launcher_virtual_gamecode[count]))
 		{
 			pFilename_buffer[count].filesize = size;
-			launcher_virtual_gamecode_valid[count] =
-				(strlen(name) >= 3) &&
-				(!strcasecmp(&(name[strlen(name) - 3]), "gba") ||
-				!strcasecmp(&(name[strlen(name) - 3]), "agb"));
+			launcher_virtual_gamecode_valid[count] = Launcher_IsGbaFilename(name);
 		}
-		else
-			pFilename_buffer[count].filesize = 0;
 		count++;
 	}
 	return count;
@@ -4380,31 +4592,24 @@ static u32 Build_recent_virtual_list(void)
 	u32 count = get_count();
 	u32 i;
 	TCHAR full_path[MAX_path_len];
-	TCHAR name[200];
-	u32 size = 0;
+	TCHAR name[LAUNCHER_FILENAME_LEN];
+	u32 size;
 
-	if(count > MAX_files)
-		count = MAX_files;
-
-	memset(pFilename_buffer, 0x00, sizeof(FM_FILE_FS) * MAX_files);
 	memset(launcher_virtual_gamecode, 0, sizeof(launcher_virtual_gamecode));
 	memset(launcher_virtual_gamecode_valid, 0, sizeof(launcher_virtual_gamecode_valid));
 	for(i = 0; i < count; i++)
 	{
-		if(Recent_GetPathAt(i, full_path, sizeof(full_path), name, sizeof(name)))
+		memset(&pFilename_buffer[i], 0, sizeof(pFilename_buffer[i]));
+		if(Recent_GetLoadedPathAt(i, count, full_path, sizeof(full_path), name, sizeof(name)))
 		{
-			strncpy(pFilename_buffer[i].filename, name, sizeof(pFilename_buffer[i].filename) - 1);
-			pFilename_buffer[i].filename[sizeof(pFilename_buffer[i].filename) - 1] = '\0';
+			Launcher_CopyString(pFilename_buffer[i].filename,
+				sizeof(pFilename_buffer[i].filename), name);
+			size = 0;
 			if(Launcher_GetVirtualFileInfo(full_path, name, &size, launcher_virtual_gamecode[i]))
 			{
 				pFilename_buffer[i].filesize = size;
-				launcher_virtual_gamecode_valid[i] =
-					(strlen(name) >= 3) &&
-					(!strcasecmp(&(name[strlen(name) - 3]), "gba") ||
-					!strcasecmp(&(name[strlen(name) - 3]), "agb"));
+				launcher_virtual_gamecode_valid[i] = Launcher_IsGbaFilename(name);
 			}
-			else
-				pFilename_buffer[i].filesize = 0;
 		}
 	}
 	return count;
@@ -4489,65 +4694,58 @@ u32 show_recently_play(void)
 	return return_val;
 }
 //------------------------------------------------------------------
-void Make_recently_play_file(TCHAR* path,TCHAR* gamefilename)
+void Make_recently_play_file(TCHAR *path, TCHAR *gamefilename)
 {
 	u32 res;
 	u32 i;
-	u32  count;
-	int get=1;
-	char buf[512];
+	u32 count;
+	u32 new_count;
+	u32 duplicate = LAUNCHER_MAX_RECENTS;
+	int written;
+	char buf[LAUNCHER_RECENT_PATH_LEN];
 
-	//res=f_chdir("/SYSTEM");
-	//is in SAVER
 	count = get_count();
+	if(strcmp(path, "/") == 0)
+		written = snprintf(buf, sizeof(buf), "%s%s", path, gamefilename);
+	else
+		written = snprintf(buf, sizeof(buf), "%s/%s", path, gamefilename);
+	if(written < 0 || (u32)written >= sizeof(buf))
+		return;
 
-	memset(buf,0x00,512);
-	if(strcmp(path,"/") ==0){
-		snprintf(buf, sizeof(buf), "%s%s", path, gamefilename);
-	}
-	else{
-		snprintf(buf, sizeof(buf), "%s/%s", path, gamefilename);
-	}
-
-	for(i=0;i<count;i++)
+	for(i = 0; i < count; i++)
 	{
-		get = strcmp(buf,p_recently_play[i]) ;
-		if(get==0)
+		if(strcmp(buf, p_recently_play[i]) == 0)
 		{
-			u32 j;
-			for(j=i;j>0;j--){
-				memset(p_recently_play[j],0x00,512);
-				dmaCopy(&(p_recently_play[j-1]),&(p_recently_play[j]), 512);
-			}
+			duplicate = i;
 			break;
 		}
 	}
 
-	if(get != 0){
-		if(count==10){
-			for(i=9;i>0;i--){
-				memset(p_recently_play[i],0x00,512);
-				dmaCopy(&(p_recently_play[i-1]),&(p_recently_play[i]), 512);
-			}
-		}
-		else if(count){
-			for(i=count;i>0;i--){
-				memset(p_recently_play[i],0x00,512);
-				dmaCopy(&(p_recently_play[i-1]),&(p_recently_play[i]), 512);
-			}
-		}
-	}
-	dmaCopy(buf,&(p_recently_play[0]), 512);	//write first one
-
-	res = f_open(&gfile,"/SYSTEM/RECENT.txt", FA_WRITE | FA_OPEN_ALWAYS);
-	if(res == FR_OK)
+	if(duplicate < count)
 	{
-		f_lseek(&gfile, 0x0000);
-		for(i=0;i<count+1;i++){
-			res=f_printf(&gfile, "%s\n", p_recently_play[i]);
-		}
-		f_close(&gfile);
+		new_count = count;
+		if(duplicate > 0)
+			memmove(&p_recently_play[1], &p_recently_play[0],
+				duplicate * sizeof(p_recently_play[0]));
 	}
+	else
+	{
+		new_count = (count < LAUNCHER_MAX_RECENTS) ? (count + 1) : LAUNCHER_MAX_RECENTS;
+		if(new_count > 1)
+			memmove(&p_recently_play[1], &p_recently_play[0],
+				(new_count - 1) * sizeof(p_recently_play[0]));
+	}
+	Launcher_CopyString(p_recently_play[0], sizeof(p_recently_play[0]), buf);
+
+	res = f_open(&gfile, "/SYSTEM/RECENT.TXT", FA_WRITE | FA_CREATE_ALWAYS);
+	if(res != FR_OK)
+		return;
+	for(i = 0; i < new_count; i++)
+	{
+		if(f_printf(&gfile, "%s\n", p_recently_play[i]) < 0)
+			break;
+	}
+	f_close(&gfile);
 }
 //---------------------------------------------------------------------------------
 void init_FAT_table(void)
@@ -4564,6 +4762,7 @@ u32 Check_game_RTS_FAT(TCHAR *filename,u32 game_save_rts)
 	//u32 ret;
 	FIL file;
 	u32 *FAT_table_P;
+	u32 *FAT_table_end;
 	u32 getcluster;
 	u32 getcluster_old;
 	u32 cluster_num = 0;
@@ -4591,12 +4790,19 @@ u32 Check_game_RTS_FAT(TCHAR *filename,u32 game_save_rts)
 	if(game_save_rts == 1)
 	{
 		FAT_table_P = FAT_table_buffer;
+		FAT_table_end = FAT_table_buffer + (0x1F0 / 4);
 	}
 	else
 	{
-		FAT_table_P = FAT_table_buffer+ FAT_table_RTS_offset/4;
+		FAT_table_P = FAT_table_buffer + FAT_table_RTS_offset/4;
+		FAT_table_end = FAT_table_buffer + FAT_table_size/4;
 	}
 
+	if (FAT_table_P + 2 > FAT_table_end)
+	{
+		f_close(&file);
+		return 0xffffffff;
+	}
 
 	*FAT_table_P = 0x00000000;
 	FAT_table_P++;
@@ -4608,6 +4814,11 @@ u32 Check_game_RTS_FAT(TCHAR *filename,u32 game_save_rts)
 		getcluster =  Get_NextCluster(&(&file)->obj,getcluster);
 		cluster_num++;
 		if(getcluster != (getcluster_old+1)) {
+			if (FAT_table_P + 2 > FAT_table_end)
+			{
+				f_close(&file);
+				return 0xffffffff;
+			}
 			#ifdef DEBUG
 				//DEBUG_printf("getcluster = %x",getcluster);
 			#endif
@@ -4732,31 +4943,44 @@ u32 IWRAM_CODE Save_savefile(TCHAR *filename,u32 savesize)
 u32 IWRAM_CODE LoadRTSfile(TCHAR *filename)
 {
 	UINT ret;
-	UINT filesize;
 	FIL file;
 	u32 page;
+	FRESULT res;
 
-	switch(f_open(&file, filename, FA_READ))
+	res = f_open(&file, filename, FA_READ);
+	if (res != FR_OK)
+		return false;
+
+	if (f_size(&file) != 0x70000)
 	{
-		case FR_OK:
-		{
-			filesize = f_size(&file);
-			if(filesize > 0x70000)
-				filesize = 0x70000;
+		f_close(&file);
+		return false;
+	}
 
-			for(page = 0x40;page<0xB0;page += 0x10)
-			{
-				SetRampage(page);
-				f_read(&file, pReadCache, 64*1024, (UINT *)&ret);
-				WriteSram(SRAMSaver, pReadCache , 64*1024 );
-			}
-	f_close(&file);
-	SetRampage(0x0);
-	return 1;
-    }
-    default:
+	/* Keep the cartridge copy invalid until every 64 KiB page is loaded. */
+	SetRampage(0xA0);
+	memset(pReadCache, 0x00, 0x10);
+	WriteSram(SRAMSaver + 0xFFF0, pReadCache, 0x10);
+	SetRampage(0x00);
+
+	for (page = 0x40; page < 0xB0; page += 0x10)
+	{
+		ret = 0;
+		res = f_read(&file, pReadCache, 64 * 1024, &ret);
+		if (res != FR_OK || ret != 64 * 1024)
+		{
+			f_close(&file);
+			SetRampage(0x00);
 			return false;
-  }
+		}
+
+		SetRampage(page);
+		WriteSram(SRAMSaver, pReadCache, 64 * 1024);
+	}
+
+	res = f_close(&file);
+	SetRampage(0x00);
+	return res == FR_OK;
 }
 //---------------------------------------------------------------------------------
 u32 SavefileWrite(TCHAR *filename,u32 savesize)
@@ -4799,25 +5023,71 @@ u32 SavefileWrite(TCHAR *filename,u32 savesize)
   }
 }
 //---------------------------------------------------------------
+static u32 SaveMode_ReadLE24(const u8 *data)
+{
+	return (u32)data[0] | ((u32)data[1] << 8) | ((u32)data[2] << 16);
+}
+
+static int SaveMode_AlphabetIndex(const char *alphabet, u8 value)
+{
+	for(int index = 0; alphabet[index] != '\0'; index++)
+	{
+		if((u8)alphabet[index] == value)
+			return index;
+	}
+	return -1;
+}
+
+static u32 SaveMode_EncodeGameCode(const u8 gamecode[4], u32 *encoded_key)
+{
+	int index0 = SaveMode_AlphabetIndex(save_mode_alphabet_0, gamecode[0]);
+	int index1 = SaveMode_AlphabetIndex(save_mode_alphabet_1, gamecode[1]);
+	int index2 = SaveMode_AlphabetIndex(save_mode_alphabet_2, gamecode[2]);
+	int index3 = SaveMode_AlphabetIndex(save_mode_alphabet_3, gamecode[3]);
+
+	if(index0 < 0 || index1 < 0 || index2 < 0 || index3 < 0)
+		return 0;
+
+	u32 key = (u32)index0;
+	key = key * (sizeof(save_mode_alphabet_1) - 1u) + (u32)index1;
+	key = key * (sizeof(save_mode_alphabet_2) - 1u) + (u32)index2;
+	key = key * (sizeof(save_mode_alphabet_3) - 1u) + (u32)index3;
+	*encoded_key = key;
+	return 1;
+}
+
 u8 Check_saveMODE(u8 gamecode[])
 {
-	UIAudio_StopForSharedBufferUse();
-	u32 i;
-	BYTE savemode = 0x10;
-	dmaCopy((void*)saveMODE_table, (void*)pReadCache, sizeof(saveMODE_table));
-	for(i=0;i<3000;i++)
+	u32 requested_key;
+	if(!SaveMode_EncodeGameCode(gamecode, &requested_key))
+		return 0x10;
+
+	u32 low = 0;
+	u32 high = SAVE_MODE_PACKED_ENTRY_COUNT;
+	while(low < high)
 	{
-		if( memcmp( ((SAVE_MODE_*)pReadCache)[i].gamecode,"FFFF",4) ==0)
+		u32 middle = low + ((high - low) >> 1);
+		u32 record = SaveMode_ReadLE24(save_mode_packed_table + middle * 3u);
+		u32 record_key = record & SAVE_MODE_PACKED_KEY_MASK;
+
+		if(record_key < requested_key)
+			low = middle + 1u;
+		else
+			high = middle;
+	}
+
+	if(low < SAVE_MODE_PACKED_ENTRY_COUNT)
+	{
+		u32 record = SaveMode_ReadLE24(save_mode_packed_table + low * 3u);
+		if((record & SAVE_MODE_PACKED_KEY_MASK) == requested_key)
 		{
-			break;
-		}
-		else if(  memcmp( ((SAVE_MODE_*)pReadCache)[i].gamecode,gamecode,4) ==0 )
-		{
-			savemode = ((SAVE_MODE_*)pReadCache)[i].savemode;
-			break;
+			u32 mode_index = record >> SAVE_MODE_PACKED_MODE_SHIFT;
+			if(mode_index < sizeof(save_mode_values))
+				return save_mode_values[mode_index];
 		}
 	}
-	return savemode;
+
+	return 0x10;
 }
 //---------------------------------------------------------------
 u8 Get_saveMODE(u8 Save_num,u32 gamefilesize)
@@ -5515,7 +5785,6 @@ u32 IWRAM_CODE LoadEMU2PSRAM(TCHAR *filename,u32 is_EMU)
 	return 0;
 }
 //---------------------------------------------------------------------------------
-extern u16 SET_info_buffer [0x200]EWRAM_BSS;
 void save_set_info_SELECT(void)
 {
 	u32 address;
@@ -5534,52 +5803,108 @@ void save_set_info_SELECT(void)
 	Save_SET_info(SET_info_buffer,0x200);
 }
 //---------------------------------------------------------------------------------
-//Sort folder
-void Sort_folder(u32 folder_total)
+//Sort folders with a stable bottom-up merge sort. The shared read cache is idle
+//while a directory is being finalized, so it can hold the temporary list without
+//reserving another permanent EWRAM buffer.
+void Sort_folder(u32 total)
 {
-	u32 ret;
-	u32 i;
-	int get;
-	if(folder_total>1)
+	FM_Folder_FS *source = pFolder;
+	FM_Folder_FS *dest = (FM_Folder_FS*)pReadCache;
+	u32 width;
+
+	if(total < 2)
+		return;
+	if(total > MAX_folder)
+		total = MAX_folder;
+
+	for(width = 1; width < total; width <<= 1)
 	{
-		for(ret=0;ret<folder_total-1;ret++)
+		u32 start;
+		for(start = 0; start < total; start += width << 1)
 		{
-			for(i=0;i<folder_total-ret-1;i++)
+			u32 left = start;
+			u32 left_end = start + width;
+			u32 right = left_end;
+			u32 right_end = start + (width << 1);
+			u32 out = start;
+
+			if(left_end > total) left_end = total;
+			if(right > total) right = total;
+			if(right_end > total) right_end = total;
+
+			while((left < left_end) && (right < right_end))
 			{
-				get = strcmp(pFolder[i].filename,pFolder[i+1].filename) ;
-				if(get>0)
-				{
-					dmaCopy(&pFolder[i+1],&(pFilename_temp.filename),sizeof(FM_Folder_FS));
-					dmaCopy(&pFolder[i],&pFolder[i+1],sizeof(FM_Folder_FS));
-					dmaCopy(&(pFilename_temp.filename),&pFolder[i],sizeof(FM_Folder_FS));
-				}
+				/* Choose the left record on equality to preserve stable ordering. */
+				if(strcmp(source[left].filename, source[right].filename) <= 0)
+					dest[out++] = source[left++];
+				else
+					dest[out++] = source[right++];
 			}
+			while(left < left_end)
+				dest[out++] = source[left++];
+			while(right < right_end)
+				dest[out++] = source[right++];
+		}
+		{
+			FM_Folder_FS *swap = source;
+			source = dest;
+			dest = swap;
 		}
 	}
+
+	if(source != pFolder)
+		memcpy(pFolder, source, total * sizeof(FM_Folder_FS));
 }
 //---------------------------------------------------------------------------------
-//Sort file
-void Sort_file(u32 game_total_SD)
+//Sort files with the same stable merge algorithm. At the 288-file limit this
+//avoids the multi-megabyte record shifting possible with insertion sorting.
+void Sort_file(u32 total)
 {
-	u32 ret;
-	u32 i;
-	int get;
-	if(game_total_SD>1)
+	FM_FILE_FS *source = pFilename_buffer;
+	FM_FILE_FS *dest = (FM_FILE_FS*)pReadCache;
+	u32 width;
+
+	if(total < 2)
+		return;
+	if(total > MAX_files)
+		total = MAX_files;
+
+	for(width = 1; width < total; width <<= 1)
 	{
-		for(ret=0;ret<game_total_SD-1;ret++)
+		u32 start;
+		for(start = 0; start < total; start += width << 1)
 		{
-			for(i=0;i<game_total_SD-ret-1;i++)
+			u32 left = start;
+			u32 left_end = start + width;
+			u32 right = left_end;
+			u32 right_end = start + (width << 1);
+			u32 out = start;
+
+			if(left_end > total) left_end = total;
+			if(right > total) right = total;
+			if(right_end > total) right_end = total;
+
+			while((left < left_end) && (right < right_end))
 			{
-				get = strcmp(pFilename_buffer[i].filename,pFilename_buffer[i+1].filename) ;
-				if(get>0)
-				{
-					dmaCopy(&pFilename_buffer[i+1],&pFilename_temp,sizeof(FM_FILE_FS));
-					dmaCopy(&pFilename_buffer[i],&pFilename_buffer[i+1],sizeof(FM_FILE_FS));
-					dmaCopy(&pFilename_temp,&pFilename_buffer[i],sizeof(FM_FILE_FS));
-				}
+				if(strcmp(source[left].filename, source[right].filename) <= 0)
+					dest[out++] = source[left++];
+				else
+					dest[out++] = source[right++];
 			}
+			while(left < left_end)
+				dest[out++] = source[left++];
+			while(right < right_end)
+				dest[out++] = source[right++];
+		}
+		{
+			FM_FILE_FS *swap = source;
+			source = dest;
+			dest = swap;
 		}
 	}
+
+	if(source != pFilename_buffer)
+		memcpy(pFilename_buffer, source, total * sizeof(FM_FILE_FS));
 }
 //---------------------------------------------------------------------------------
 static u32 Launcher_CustomThumbHash(const char *name)
@@ -5629,26 +5954,67 @@ static void Launcher_CustomThumbStripLine(char *line)
 	}
 }
 
+static void Launcher_SortCustomThumbManifest(void)
+{
+	u32 i;
+	u32 unique_count;
+
+	for(i = 1; i < launcher_custom_thumb_manifest_count; i++)
+	{
+		u32 value = launcher_custom_thumb_manifest_hash[i];
+		u32 lo = 0;
+		u32 hi = i;
+		while(lo < hi)
+		{
+			u32 mid = lo + (hi - lo) / 2;
+			if(launcher_custom_thumb_manifest_hash[mid] <= value)
+				lo = mid + 1;
+			else
+				hi = mid;
+		}
+		if(lo != i)
+		{
+			memmove(&launcher_custom_thumb_manifest_hash[lo + 1],
+				&launcher_custom_thumb_manifest_hash[lo], (i - lo) * sizeof(u32));
+			launcher_custom_thumb_manifest_hash[lo] = value;
+		}
+	}
+
+	if(launcher_custom_thumb_manifest_count < 2)
+		return;
+	unique_count = 1;
+	for(i = 1; i < launcher_custom_thumb_manifest_count; i++)
+	{
+		if(launcher_custom_thumb_manifest_hash[i] !=
+		launcher_custom_thumb_manifest_hash[unique_count - 1])
+			launcher_custom_thumb_manifest_hash[unique_count++] =
+				launcher_custom_thumb_manifest_hash[i];
+	}
+	launcher_custom_thumb_manifest_count = (u16)unique_count;
+}
+
 static void __attribute__((noinline)) Launcher_LoadCustomThumbManifest(u32 style)
 {
 	u32 hash;
 
 	if(style > LAUNCHER_THUMB_STYLE_BOX)
 		style = LAUNCHER_THUMB_STYLE_TITLE;
-	if(launcher_custom_thumb_manifest_loaded[style])
+	if(launcher_custom_thumb_manifest_loaded && launcher_custom_thumb_manifest_style == (u8)style)
 		return;
 
-	launcher_custom_thumb_manifest_loaded[style] = 1;
-	launcher_custom_thumb_manifest_present[style] = 0;
-	launcher_custom_thumb_manifest_count[style] = 0;
+	launcher_custom_thumb_manifest_loaded = 1;
+	launcher_custom_thumb_manifest_style = (u8)style;
+	launcher_custom_thumb_manifest_present = 0;
+	launcher_custom_thumb_manifest_count = 0;
 	memset(&launcher_custom_thumb_scan_dir, 0, sizeof(launcher_custom_thumb_scan_dir));
 	memset(&launcher_custom_thumb_scan_info, 0, sizeof(launcher_custom_thumb_scan_info));
-	sprintf(launcher_custom_thumb_scan_path, "%s/CUSTOM", Launcher_ThumbnailFolder());
+	snprintf(launcher_custom_thumb_scan_path, sizeof(launcher_custom_thumb_scan_path),
+		"%s/CUSTOM", Launcher_ThumbnailFolder());
 	if(f_opendir(&launcher_custom_thumb_scan_dir, launcher_custom_thumb_scan_path) != FR_OK)
 		return;
 
-	launcher_custom_thumb_manifest_present[style] = 1;
-	while(launcher_custom_thumb_manifest_count[style] < LAUNCHER_CUSTOM_THUMB_MANIFEST_MAX)
+	launcher_custom_thumb_manifest_present = 1;
+	while(launcher_custom_thumb_manifest_count < LAUNCHER_CUSTOM_THUMB_MANIFEST_MAX)
 	{
 		if((f_readdir(&launcher_custom_thumb_scan_dir, &launcher_custom_thumb_scan_info) != FR_OK) ||
 		!launcher_custom_thumb_scan_info.fname[0])
@@ -5663,31 +6029,40 @@ static void __attribute__((noinline)) Launcher_LoadCustomThumbManifest(u32 style
 			continue;
 		hash = Launcher_CustomThumbHash(launcher_custom_thumb_scan_name);
 		if(hash)
-			launcher_custom_thumb_manifest_hash[style][launcher_custom_thumb_manifest_count[style]++] = hash;
+			launcher_custom_thumb_manifest_hash[launcher_custom_thumb_manifest_count++] = hash;
 	}
 	f_closedir(&launcher_custom_thumb_scan_dir);
+	Launcher_SortCustomThumbManifest();
 }
 
 static u32 Launcher_ShouldTryCustomThumbnail(const char *name)
 {
 	u32 style = launcher_thumbnail_style;
 	u32 hash;
-	u32 i;
 
 	if(style > LAUNCHER_THUMB_STYLE_BOX)
 		style = LAUNCHER_THUMB_STYLE_TITLE;
 	if(!name || !name[0])
 		return 0;
 	Launcher_LoadCustomThumbManifest(style);
-	if(!launcher_custom_thumb_manifest_present[style])
+	if(!launcher_custom_thumb_manifest_present)
 		return 0;
 	hash = Launcher_CustomThumbHash(name);
-	for(i = 0; i < launcher_custom_thumb_manifest_count[style]; i++)
 	{
-		if(launcher_custom_thumb_manifest_hash[style][i] == hash)
-			return 1;
+		u32 lo = 0;
+		u32 hi = launcher_custom_thumb_manifest_count;
+		while(lo < hi)
+		{
+			u32 mid = lo + (hi - lo) / 2;
+			u32 value = launcher_custom_thumb_manifest_hash[mid];
+			if(value < hash)
+				lo = mid + 1;
+			else
+				hi = mid;
+		}
+		return (lo < launcher_custom_thumb_manifest_count &&
+			launcher_custom_thumb_manifest_hash[lo] == hash);
 	}
-	return 0;
 }
 
 static u16 Launcher_ListArtRawInput(void)
@@ -6481,7 +6856,6 @@ static void Launcher_ScaleThumb80x80_To37x37(const u16 *src, u16 *dst, int dst_s
 	int y;
 	int x;
 
-	Launcher_InitScaleMaps();
 	for(y = 0; y < 37; y++)
 	{
 		const u16 *src_row = src + launcher_scale80_37[y] * 80;
@@ -6496,7 +6870,6 @@ static void Launcher_ScaleThumb80x80_To56x56(const u16 *src, u16 *dst, int dst_s
 	int y;
 	int x;
 
-	Launcher_InitScaleMaps();
 	for(y = 0; y < 56; y++)
 	{
 		const u16 *src_row = src + launcher_scale80_56[y] * 80;
@@ -6511,7 +6884,6 @@ static void Launcher_ScaleThumb80x80_To32x32(const u16 *src, u16 *dst, int dst_s
 	int y;
 	int x;
 
-	Launcher_InitScaleMaps();
 	for(y = 0; y < 32; y++)
 	{
 		const u16 *src_row = src + launcher_scale80_32[y] * 80;
@@ -6521,32 +6893,11 @@ static void Launcher_ScaleThumb80x80_To32x32(const u16 *src, u16 *dst, int dst_s
 	}
 }
 
-static void Launcher_InitScaleMaps(void)
-{
-	int i;
-	for(i = 0; i < 84; i++)
-		launcher_scale84_x[i] = (u8)((i * 119 + 41) / 83);
-	for(i = 0; i < 56; i++)
-		launcher_scale56_y[i] = (u8)((i * 79 + 27) / 55);
-	for(i = 0; i < 48; i++)
-		launcher_scale48_x[i] = (u8)((i * 119 + 23) / 47);
-	for(i = 0; i < 32; i++)
-		launcher_scale32_y[i] = (u8)((i * 79 + 15) / 31);
-	for(i = 0; i < 56; i++)
-		launcher_scale80_56[i] = (u8)((i * 79 + 27) / 55);
-	for(i = 0; i < 37; i++)
-		launcher_scale80_37[i] = (u8)((i * 79 + 18) / 36);
-	for(i = 0; i < 32; i++)
-		launcher_scale80_32[i] = (u8)((i * 79 + 15) / 31);
-	launcher_scale_maps_ready = 1;
-}
-
 static void Launcher_ScaleThumb120x80_To84x56(const u16 *src, u16 *dst)
 {
 	int y;
 	int x;
 
-	Launcher_InitScaleMaps();
 	for(y = 0; y < 56; y++)
 	{
 		const u16 *src_row = src + launcher_scale56_y[y] * 120;
@@ -6561,7 +6912,6 @@ static void Launcher_ScaleThumb120x80_To48x32(const u16 *src, u16 *dst)
 	int y;
 	int x;
 
-	Launcher_InitScaleMaps();
 	for(y = 0; y < 32; y++)
 	{
 		const u16 *src_row = src + launcher_scale32_y[y] * 120;
@@ -7053,72 +7403,6 @@ static void Launcher_PrepareSideIconPanel48x32(const u16 *icon, u16 *dst, const 
 		Launcher_DrawIconToPanel16(icon, dst, 48, 32);
 }
 
-static int __attribute__((unused)) Launcher_SplitTitleNarrow(const char *title, char lines[3][32])
-{
-	int title_len;
-	int pos = 0;
-	int line_count = 0;
-	int i;
-
-	memset(lines, 0, sizeof(char) * 3 * 32);
-	title_len = strlen(title);
-
-	while(pos < title_len && line_count < 3)
-	{
-		int remaining = title_len - pos;
-		int max_take = (line_count < 2) ? 14 : 16;
-		int take = (remaining > max_take) ? max_take : remaining;
-		int split = pos + take;
-
-		if(split < title_len)
-		{
-			for(i = split; i > pos + 5; i--)
-			{
-				if(title[i] == ' ')
-				{
-					split = i;
-					break;
-				}
-			}
-		}
-
-		if(split <= pos)
-			split = pos + take;
-
-		strncpy(lines[line_count], title + pos, split - pos);
-		lines[line_count][split - pos] = '\0';
-
-		while(lines[line_count][0] == ' ')
-			memmove(lines[line_count], lines[line_count] + 1, strlen(lines[line_count]));
-
-		pos = split;
-		while(title[pos] == ' ')
-			pos++;
-
-		line_count++;
-	}
-
-	if(pos < title_len && line_count > 0)
-	{
-		int last = line_count - 1;
-		int len = strlen(lines[last]);
-		if(len > 16)
-			len = 16;
-		while(len > 0 && lines[last][len - 1] == ' ')
-			len--;
-		lines[last][len] = '\0';
-		strcat(lines[last], "...");
-	}
-
-	if(line_count == 0)
-	{
-		strcpy(lines[0], " ");
-		line_count = 1;
-	}
-
-	return line_count;
-}
-
 static void Launcher_RestoreBGClip(const u16 *bg, int x, int y, int w, int h)
 {
 	int x0 = x;
@@ -7300,19 +7584,22 @@ static void Launcher_ResetThumbCache(void)
 	launcher_cache_prev.has_thumbnail = 0;
 	launcher_cache_selected.has_thumbnail = 0;
 	launcher_cache_next.has_thumbnail = 0;
-	Launcher_InitScaleMaps();
 	memset(&launcher_thumbnail_workspace, 0, sizeof(launcher_thumbnail_workspace));
 	Launcher_InvalidateListArtScaledCache();
+	Launcher_StartPreviewCacheInvalidate();
 	launcher_thumbnail_workspace_mode = 0xFF;
 }
 
 static void Launcher_ActivateThumbnailWorkspace(u32 mode)
 {
-	if(launcher_thumbnail_workspace_mode == (u8)mode)
+	u8 old_mode = launcher_thumbnail_workspace_mode;
+	if(old_mode == (u8)mode)
 		return;
+	if(old_mode == LAUNCHER_THUMB_WORKSPACE_START_PREVIEW ||
+	mode == LAUNCHER_THUMB_WORKSPACE_START_PREVIEW)
+		Launcher_StartPreviewCacheInvalidate();
 	memset(&launcher_thumbnail_workspace, 0, sizeof(launcher_thumbnail_workspace));
-	if(launcher_thumbnail_workspace_mode == LAUNCHER_VIEW_LIST_ART ||
-	mode == LAUNCHER_VIEW_LIST_ART)
+	if(old_mode == LAUNCHER_VIEW_LIST_ART || mode == LAUNCHER_VIEW_LIST_ART)
 		Launcher_InvalidateListArtScaledCache();
 	launcher_thumbnail_workspace_mode = (u8)mode;
 }
@@ -8629,7 +8916,6 @@ static void Launcher_CycleViewModeAndRedraw(u32 page_num, u32 show_offset, u32 f
 
 static void Launcher_FavouritePromptFullPath(const char *full)
 {
-	char msg2[80];
 	s32 fav_index;
 
 	if(!full || !full[0])
@@ -8651,8 +8937,6 @@ static void Launcher_FavouritePromptFullPath(const char *full)
 		int x1 = (240 - strlen(msg1) * 6) / 2;
 		DrawHZText12(msg1, 0, x1, 45, gl_color_text, 1);
 	}
-	(void)msg2;
-
 	while(1)
 	{
 		VBlankIntrWait();
@@ -8666,15 +8950,16 @@ static void Launcher_FavouritePromptFullPath(const char *full)
 				UIAudio_PlayAccept();
 				if(fav_index >= 0)
 				{
-					u32 i;
-					for(i = (u32)fav_index; i + 1 < launcher_favourite_count; i++)
+					u32 index = (u32)fav_index;
+					if(index + 1 < launcher_favourite_count)
 					{
-						memset(Launcher_FavouritesBuffer()[i], 0x00, LAUNCHER_FAVOURITE_PATH_LEN);
-						dmaCopy(Launcher_FavouritesBuffer()[i + 1], Launcher_FavouritesBuffer()[i], LAUNCHER_FAVOURITE_PATH_LEN);
+						memmove(Launcher_FavouritesBuffer()[index],
+							Launcher_FavouritesBuffer()[index + 1],
+							(launcher_favourite_count - index - 1) * LAUNCHER_FAVOURITE_PATH_LEN);
 					}
 					if(launcher_favourite_count)
 						launcher_favourite_count--;
-					memset(Launcher_FavouritesBuffer()[launcher_favourite_count], 0x00, LAUNCHER_FAVOURITE_PATH_LEN);
+					Launcher_FavouritesBuffer()[launcher_favourite_count][0] = '\0';
 					if(launcher_favourite_index >= launcher_favourite_count)
 						launcher_favourite_index = 0;
 				}
@@ -8701,7 +8986,7 @@ static void Launcher_FavouritePromptFullPath(const char *full)
 
 static void Launcher_FavouritePrompt(u32 show_offset, u32 file_select)
 {
-	char full[512];
+	char full[LAUNCHER_RECENT_PATH_LEN];
 	u32 absolute_index = show_offset + file_select;
 
 	if(!Launcher_GetSDFileFullPath(absolute_index, full, sizeof(full)))
@@ -8757,38 +9042,22 @@ u32 Check_file_type(TCHAR *pfilename)
 //---------------------------------------------------------------------------------
 void Show_error_num(u8 error_num)
 {
-	char msg[50];
+	const char *msg;
 
 	Launcher_ClearWithThemeBG(Launcher_GetBGImage(),90, 2, 90, 13);
 	switch(error_num)
 	{
-		case 0x0:
-			sprintf(msg,"%s",gl_error_0);
-			break;
-		case 0x1:
-			sprintf(msg,"%s",gl_error_1);
-			break;
-		case 0x2:
-			sprintf(msg,"%s",gl_error_2);
-			break;
-		case 0x3:
-			sprintf(msg,"%s",gl_error_3);
-			break;
-		case 0x4:
-			sprintf(msg,"%s",gl_error_4);
-			break;
-		case 0x5:
-			sprintf(msg,"%s",gl_error_5);
-			break;
-		case 0x6:
-			sprintf(msg,"%s",gl_error_6);
-			break;
-		default:
-			sprintf(msg,"%s","error?");
-			break;
+		case 0x0: msg = gl_error_0; break;
+		case 0x1: msg = gl_error_1; break;
+		case 0x2: msg = gl_error_2; break;
+		case 0x3: msg = gl_error_3; break;
+		case 0x4: msg = gl_error_4; break;
+		case 0x5: msg = gl_error_5; break;
+		case 0x6: msg = gl_error_6; break;
+		default: msg = "error?"; break;
 	}
 
-	DrawHZText12(msg,0,90,2, RGB(31,00,00),1);
+	DrawHZText12((TCHAR*)msg,0,90,2, RGB(31,00,00),1);
 	wait_btn();
 }
 //---------------------------------------------------------------------------------
@@ -9005,7 +9274,7 @@ static u32 Read_last_launch_mode(void)
 	u32 mode = LAST_LAUNCH_MODE_CLEAN;
 
 	memset(buf, 0x00, sizeof(buf));
-	if(Launcher_SettingsReadValue("Last launch mode", buf, sizeof(buf)))
+	if(Launcher_SettingsReadValue(LAUNCHER_SETTING_LAST_LAUNCH_MODE, buf, sizeof(buf)))
 	{
 		if((buf[0] == '1') || !strcasecmp(buf, "Addon"))
 			mode = LAST_LAUNCH_MODE_ADDON;
@@ -9368,7 +9637,7 @@ static void Launcher_ReadSoundsSetting(void)
 
     launcher_sounds_enabled = 1;
     memset(buf, 0, sizeof(buf));
-    if(Launcher_SettingsReadValue("Sounds", buf, sizeof(buf)))
+    if(Launcher_SettingsReadValue(LAUNCHER_SETTING_SOUNDS, buf, sizeof(buf)))
     {
         if(!strcasecmp(buf, "Off") || !strcasecmp(buf, "No") ||
            !strcasecmp(buf, DSTEXT_OFF) || (buf[0] == '0'))
@@ -9384,7 +9653,7 @@ static void Launcher_ReadHideSystemFilesSetting(void)
 
     launcher_hide_system_files = 1;
     memset(buf, 0, sizeof(buf));
-    if(Launcher_SettingsReadValue("Hide system files", buf, sizeof(buf)))
+    if(Launcher_SettingsReadValue(LAUNCHER_SETTING_HIDE_SYSTEM_FILES, buf, sizeof(buf)))
     {
         if(!strcasecmp(buf, "Off") || !strcasecmp(buf, "No") ||
            !strcasecmp(buf, DSTEXT_OFF) || (buf[0] == '0'))
@@ -9400,7 +9669,7 @@ static void Launcher_ReadListFoldersSetting(void)
 
     launcher_list_folders = 0;
     memset(buf, 0, sizeof(buf));
-    if(Launcher_SettingsReadValue("List folders", buf, sizeof(buf)))
+    if(Launcher_SettingsReadValue(LAUNCHER_SETTING_LIST_FOLDERS, buf, sizeof(buf)))
     {
         if(!strcasecmp(buf, "On") || !strcasecmp(buf, "Yes") ||
            !strcasecmp(buf, DSTEXT_ON) || (buf[0] == '1'))
@@ -9416,7 +9685,7 @@ static void Launcher_ReadCleanListSetting(void)
 
     launcher_clean_list = 0;
     memset(buf, 0, sizeof(buf));
-    if(Launcher_SettingsReadValue("Clean list", buf, sizeof(buf)))
+    if(Launcher_SettingsReadValue(LAUNCHER_SETTING_CLEAN_LIST, buf, sizeof(buf)))
     {
         if(!strcasecmp(buf, "On") || !strcasecmp(buf, "Yes") ||
            !strcasecmp(buf, DSTEXT_ON) || (buf[0] == '1'))
@@ -9432,7 +9701,7 @@ static void Launcher_ReadClockFormatSetting(void)
 
     launcher_clock_24_hour = 1;
     memset(buf, 0, sizeof(buf));
-    if(Launcher_SettingsReadValue("Clock format", buf, sizeof(buf)))
+    if(Launcher_SettingsReadValue(LAUNCHER_SETTING_CLOCK_FORMAT, buf, sizeof(buf)))
     {
         if(!strcasecmp(buf, "12 hour") || !strcasecmp(buf, "12-hour") ||
            !strcasecmp(buf, "12H") || !strcasecmp(buf, DSTEXT_CLOCK_12H) || (buf[0] == '1'))
@@ -9449,7 +9718,7 @@ static void Launcher_ReadViewModeSetting(void)
     char buf[32];
 
     memset(buf, 0, sizeof(buf));
-    if(Launcher_SettingsReadValue("View mode", buf, sizeof(buf)))
+    if(Launcher_SettingsReadValue(LAUNCHER_SETTING_VIEW_MODE, buf, sizeof(buf)))
     {
         if(!strcasecmp(buf, "Horizontal") || !strcasecmp(buf, DSTEXT_VIEW_HORIZONTAL))
             gl_show_Thumbnail = LAUNCHER_VIEW_HORIZONTAL;
@@ -9473,7 +9742,7 @@ static void Launcher_ReadListArtPositionSetting(void)
 
     launcher_list_art_position = LAUNCHER_SIDE_ALIGN_BOTTOM;
     memset(buf, 0, sizeof(buf));
-    if(Launcher_SettingsReadValue("List art", buf, sizeof(buf)))
+    if(Launcher_SettingsReadValue(LAUNCHER_SETTING_LIST_ART, buf, sizeof(buf)))
     {
         if(!strcasecmp(buf, "Top") || !strcasecmp(buf, DSTEXT_ALIGN_TOP))
             launcher_list_art_position = LAUNCHER_SIDE_ALIGN_TOP;
@@ -9495,7 +9764,7 @@ static void Launcher_ReadArtBorderSetting(void)
 
     launcher_art_border_mode = 0;
     memset(buf, 0, sizeof(buf));
-    if(Launcher_SettingsReadValue("Art border", buf, sizeof(buf)))
+    if(Launcher_SettingsReadValue(LAUNCHER_SETTING_ART_BORDER, buf, sizeof(buf)))
     {
         if(!strcasecmp(buf, "Accent") || !strcasecmp(buf, DSTEXT_BORDER_ACCENT))
             launcher_art_border_mode = 1;
@@ -9516,7 +9785,7 @@ static void Launcher_ReadRoundedCornersSetting(void)
 
     launcher_art_rounded_corners = 0;
     memset(buf, 0, sizeof(buf));
-    if(Launcher_SettingsReadValue("Rounded corners", buf, sizeof(buf)))
+    if(Launcher_SettingsReadValue(LAUNCHER_SETTING_ROUNDED_CORNERS, buf, sizeof(buf)))
     {
         if(!strcasecmp(buf, "Full") || !strcasecmp(buf, "On") || !strcasecmp(buf, "Yes") ||
            !strcasecmp(buf, DSTEXT_ROUNDED_FULL) || !strcasecmp(buf, DSTEXT_ON) || (buf[0] == '1'))
@@ -9538,7 +9807,7 @@ static void Launcher_ReadVerticalSideSetting(void)
 
     launcher_vertical_side_align = LAUNCHER_SIDE_ALIGN_CENTER;
     memset(buf, 0, sizeof(buf));
-    if(Launcher_SettingsReadValue("Vertical side", buf, sizeof(buf)))
+    if(Launcher_SettingsReadValue(LAUNCHER_SETTING_VERTICAL_SIDE, buf, sizeof(buf)))
     {
         if(!strcasecmp(buf, "Left") || !strcasecmp(buf, DSTEXT_ALIGN_LEFT))
             launcher_vertical_side_align = LAUNCHER_SIDE_ALIGN_LEFT;
@@ -9563,7 +9832,7 @@ static void Launcher_ReadHorizontalSideSetting(void)
 
     launcher_horizontal_side_align = LAUNCHER_SIDE_ALIGN_CENTER;
     memset(buf, 0, sizeof(buf));
-    if(Launcher_SettingsReadValue("Horizontal side", buf, sizeof(buf)))
+    if(Launcher_SettingsReadValue(LAUNCHER_SETTING_HORIZONTAL_SIDE, buf, sizeof(buf)))
     {
         if(!strcasecmp(buf, "Top") || !strcasecmp(buf, DSTEXT_ALIGN_TOP))
             launcher_horizontal_side_align = LAUNCHER_SIDE_ALIGN_TOP;
@@ -9624,7 +9893,7 @@ static void Launcher_ReadLanguageSetting(void)
     u16 old_lang = gl_select_lang;
 
     memset(buf, 0, sizeof(buf));
-    if(!Launcher_SettingsReadValue("Language", buf, sizeof(buf)))
+    if(!Launcher_SettingsReadValue(LAUNCHER_SETTING_LANGUAGE, buf, sizeof(buf)))
         return;
 
     for(i = 0; i < LAUNCHER_LANGUAGE_COUNT; i++)
@@ -9664,7 +9933,7 @@ static void Launcher_ReadThumbnailStyle(void)
 
     launcher_thumbnail_style = LAUNCHER_THUMB_STYLE_TITLE;
     memset(buf, 0, sizeof(buf));
-    if(Launcher_SettingsReadValue("Thumbnails", buf, sizeof(buf)))
+    if(Launcher_SettingsReadValue(LAUNCHER_SETTING_THUMBNAILS, buf, sizeof(buf)))
     {
         if(!strcasecmp(buf, "Box") || !strcasecmp(buf, DSTEXT_THUMB_BOX) || (buf[0] == '1'))
             launcher_thumbnail_style = LAUNCHER_THUMB_STYLE_BOX;
@@ -10675,6 +10944,7 @@ static void Launcher_SaveUnifiedSettings(void)
         f_unlink(LAST_LAUNCH_MODE_FILE);
         f_unlink(AUTO_START_KEY_FILE);
         launcher_settings_migration_pending = 0;
+        Launcher_SettingsInvalidateCache();
     }
 }
 
@@ -10710,7 +10980,7 @@ static void Launcher_ReadAutoStartKey(void)
     char buf[32];
     gl_auto_start_key = LAUNCHER_KEY_START;
     memset(buf, 0, sizeof(buf));
-    if(Launcher_SettingsReadValue("Quick start hotkey", buf, sizeof(buf)))
+    if(Launcher_SettingsReadValue(LAUNCHER_SETTING_QUICK_START_HOTKEY, buf, sizeof(buf)))
     {
         gl_auto_start_key = Launcher_KeyFromNameOrNumber(buf);
     }
@@ -11595,7 +11865,7 @@ static void Launcher_PlaySnake(void)
     u32 move_frames = 0;
     u32 game_over = 0;
 
-    Launcher_InvalidateListArtScaledCache();
+    Launcher_ActivateThumbnailWorkspace(LAUNCHER_THUMB_WORKSPACE_SNAKE);
     Launcher_DrawThemeBGFull((const u16*)gImage_SD_LIST);
     Launcher_DrawTopbarName(HELP);
     Launcher_DrawTopbarTitle(HELP, "Snake");
@@ -12057,7 +12327,7 @@ static void Launcher_ShowHelpBOnly(void)
 static u32 Launcher_PrepareLastPlayedForMenu(void)
 {
     TCHAR recent_path[MAX_path_len];
-    TCHAR recent_name[200];
+    TCHAR recent_name[LAUNCHER_FILENAME_LEN];
 
     memset(recent_path, 0, sizeof(recent_path));
     memset(recent_name, 0, sizeof(recent_name));
@@ -12065,11 +12335,11 @@ static u32 Launcher_PrepareLastPlayedForMenu(void)
     if(!Launcher_GetStartGameEntry(recent_path, sizeof(recent_path), recent_name, sizeof(recent_name)))
         return 0;
 
-    memset(p_recently_play[0], 0x00, 512);
+    memset(p_recently_play[0], 0, sizeof(p_recently_play[0]));
     if(strcmp(recent_path, "/") == 0)
-        snprintf(p_recently_play[0], 512, "/%s", recent_name);
+        snprintf(p_recently_play[0], sizeof(p_recently_play[0]), "/%s", recent_name);
     else
-        snprintf(p_recently_play[0], 512, "%s/%s", recent_path, recent_name);
+        snprintf(p_recently_play[0], sizeof(p_recently_play[0]), "%s/%s", recent_path, recent_name);
 
     return (p_recently_play[0][0] == '/') ? 1 : 0;
 }
@@ -12077,7 +12347,7 @@ static u32 Launcher_PrepareLastPlayedForMenu(void)
 static void Launcher_StartGetLastTitle(char *out, u32 out_size)
 {
     TCHAR recent_path[MAX_path_len];
-    TCHAR recent_name[200];
+    TCHAR recent_name[LAUNCHER_FILENAME_LEN];
 
     if(!out || out_size == 0)
         return;
@@ -12593,7 +12863,7 @@ static void Launcher_DrawStartFileIconInThumbBox(const TCHAR *filename, int x, i
 static void Launcher_DrawStartLastThumb(int x, int y)
 {
     TCHAR recent_path[MAX_path_len];
-    TCHAR recent_name[200];
+    TCHAR recent_name[LAUNCHER_FILENAME_LEN];
     TCHAR saved_path[MAX_path_len];
     const u16 *cached_preview = 0;
     u32 have_thumb = 0;
@@ -12633,7 +12903,7 @@ static void Launcher_DrawStartLastThumb(int x, int y)
     }
     else if(have_thumb)
     {
-		Launcher_ActivateThumbnailWorkspace(0xFE);
+		Launcher_ActivateThumbnailWorkspace(LAUNCHER_THUMB_WORKSPACE_START_SCRATCH);
         Launcher_ScaleThumbToBox((u16*)(pReadCache + 0x10036),
                                  Launcher_ThumbnailSourceWidth(),
                                  Launcher_ThumbnailSourceHeight(),
@@ -12653,7 +12923,7 @@ static void Launcher_DrawStartLastThumb(int x, int y)
     }
     else
     {
-		Launcher_ActivateThumbnailWorkspace(0xFE);
+		Launcher_ActivateThumbnailWorkspace(LAUNCHER_THUMB_WORKSPACE_START_SCRATCH);
         Launcher_ScaleThumbToBox(Launcher_NotFoundImage(), Launcher_NotFoundWidth(), Launcher_NotFoundHeight(), launcher_side_preview_left, thumb_w, thumb_h);
         if(launcher_thumbnail_style == LAUNCHER_THUMB_STYLE_BOX)
             Launcher_DrawPicClipStride(launcher_side_preview_left + 9, thumb_w, x + 9, y, 37, thumb_h);
@@ -13884,15 +14154,15 @@ refind_file:
 			/* Restore the saved SD selection for every folder level, including
 			the root.  Settings -> SD previously fell back to 0/0 at root,
 			unlike NOR -> SD, so the highlighted item was lost. */
-			file_select = p_folder_select_file_select[folder_select];
-			show_offset = p_folder_select_show_offset[folder_select];
+			file_select = p_folder_select_file_select[Launcher_FolderHistoryIndex(folder_select)];
+			show_offset = p_folder_select_show_offset[Launcher_FolderHistoryIndex(folder_select)];
 		}
 		if(startup_resume_pending || startup_quicklaunch_pending)
 		{
 			if(Apply_last_played_selection(&show_offset, &file_select))
 			{
-				p_folder_select_show_offset[folder_select] = show_offset;
-				p_folder_select_file_select[folder_select] = file_select;
+				p_folder_select_show_offset[Launcher_FolderHistoryIndex(folder_select)] = show_offset;
+				p_folder_select_file_select[Launcher_FolderHistoryIndex(folder_select)] = file_select;
 			}
 			startup_resume_pending = 0;
 		}
@@ -14193,7 +14463,7 @@ re_showfile:
 					res = Launcher_StartWindow();
 					if(res == 4){
 						TCHAR saved_path[MAX_path_len];
-						TCHAR saved_filename[200];
+						TCHAR saved_filename[LAUNCHER_FILENAME_LEN];
 						u32 saved_folder_select = folder_select;
 						u32 saved_show_offset = show_offset;
 						u32 saved_file_select = file_select;
@@ -14563,8 +14833,8 @@ re_showfile:
 					Launcher_IsLaunchableFilename(pFilename_buffer[show_offset + file_select - folder_total].filename))
 					{
 						UIAudio_PlaySfx(UI_SFX_MENU);
-						p_folder_select_show_offset[folder_select] = show_offset;
-						p_folder_select_file_select[folder_select] = file_select;
+						p_folder_select_show_offset[Launcher_FolderHistoryIndex(folder_select)] = show_offset;
+						p_folder_select_file_select[Launcher_FolderHistoryIndex(folder_select)] = file_select;
 						Launcher_SaveSDState();
 						Launcher_FavouritePrompt(show_offset, file_select);
 						Launcher_WaitForMenuKeyRelease(KEY_SELECT);
@@ -14882,8 +15152,8 @@ re_showfile:
 						/* Preserve the current SD cursor before the delete popup.  The
 						rebuilt list restores from these per-folder slots, so without
 						this a cancel can jump back to the start of the folder. */
-						p_folder_select_show_offset[folder_select] = show_offset;
-						p_folder_select_file_select[folder_select] = file_select;
+						p_folder_select_show_offset[Launcher_FolderHistoryIndex(folder_select)] = show_offset;
+						p_folder_select_file_select[Launcher_FolderHistoryIndex(folder_select)] = file_select;
 						Launcher_SaveSDState();
 						delete_confirmed = SD_list_L_START(show_offset, file_select, folder_total);
 						launcher_start_release_suppressed = 1;
@@ -14914,8 +15184,8 @@ re_showfile:
 				else if(page_num == SD_list)
 				{
 					UIAudio_PlaySfx(UI_SFX_TAB);
-					p_folder_select_show_offset[folder_select] = show_offset;
-					p_folder_select_file_select[folder_select] = file_select;
+					p_folder_select_show_offset[Launcher_FolderHistoryIndex(folder_select)] = show_offset;
+					p_folder_select_file_select[Launcher_FolderHistoryIndex(folder_select)] = file_select;
 					Launcher_SaveSDState();
 					launcher_start_selected = 3;
 					page_num = SET_win;
@@ -14945,8 +15215,8 @@ re_showfile:
 				else if(page_num == SD_list)
 				{
 					UIAudio_PlaySfx(UI_SFX_TAB);
-					p_folder_select_show_offset[folder_select] = show_offset;
-					p_folder_select_file_select[folder_select] = file_select;
+					p_folder_select_show_offset[Launcher_FolderHistoryIndex(folder_select)] = show_offset;
+					p_folder_select_file_select[Launcher_FolderHistoryIndex(folder_select)] = file_select;
 					Launcher_SaveSDState();
 					launcher_start_selected = 2;
 					recents_view_active = 0;
@@ -14990,8 +15260,8 @@ re_showfile:
 						strncpy(currentpath, recents_return_path, sizeof(currentpath) - 1);
 						currentpath[sizeof(currentpath) - 1] = '\0';
 						folder_select = recents_return_folder_select;
-						p_folder_select_show_offset[folder_select] = recents_return_show_offset;
-						p_folder_select_file_select[folder_select] = recents_return_file_select;
+						p_folder_select_show_offset[Launcher_FolderHistoryIndex(folder_select)] = recents_return_show_offset;
+						p_folder_select_file_select[Launcher_FolderHistoryIndex(folder_select)] = recents_return_file_select;
 						Launcher_SaveSDState();
 						launcher_vertical_folder_label_dirty = 1;
 						launcher_force_full_redraw = 1;
@@ -15013,8 +15283,8 @@ re_showfile:
 							goto re_showfile;
 						}
 
-						p_folder_select_show_offset[folder_select] = 0;//clean
-						p_folder_select_file_select[folder_select] = 0;//clean
+						p_folder_select_show_offset[Launcher_FolderHistoryIndex(folder_select)] = 0;//clean
+						p_folder_select_file_select[Launcher_FolderHistoryIndex(folder_select)] = 0;//clean
 						if(folder_select){
 							folder_select--;
 						}
@@ -15026,8 +15296,8 @@ re_showfile:
 						if(!launcher_start_screen_off)
 						{
 							UIAudio_PlayBack();
-							p_folder_select_show_offset[folder_select] = show_offset;
-							p_folder_select_file_select[folder_select] = file_select;
+							p_folder_select_show_offset[Launcher_FolderHistoryIndex(folder_select)] = show_offset;
+							p_folder_select_file_select[Launcher_FolderHistoryIndex(folder_select)] = file_select;
 							Launcher_SaveSDState();
 							launcher_start_selected = 1;
 							page_num = START_win;
@@ -15058,7 +15328,7 @@ re_showfile:
 					//res = f_getcwd(currentpath, sizeof currentpath / sizeof *currentpath);
 		if( show_offset+file_select <  folder_total)
 		{
-						TCHAR nextpath[MAX_path_len + 200];
+						TCHAR nextpath[LAUNCHER_RECENT_PATH_LEN];
 						if(strcmp(currentpath,"/") !=0)
 							snprintf(nextpath, sizeof(nextpath), "%s/%s", currentpath, pFolder[show_offset+file_select].filename);
 						else
@@ -15072,8 +15342,8 @@ re_showfile:
 							goto re_showfile;
 						}
 
-						p_folder_select_show_offset[folder_select] = show_offset;
-						p_folder_select_file_select[folder_select] = file_select;
+						p_folder_select_show_offset[Launcher_FolderHistoryIndex(folder_select)] = show_offset;
+						p_folder_select_file_select[Launcher_FolderHistoryIndex(folder_select)] = file_select;
 						folder_select++;
 						launcher_vertical_folder_label_dirty = 1;
 
@@ -15465,15 +15735,15 @@ u8 SD_list_MENU(u32 show_offset,	u32 file_select,u32 play_re )
 		pfilename = pFilename_buffer[show_offset+file_select-folder_total].filename;
 	}
 	else{
-		char *p=strrchr(p_recently_play[play_re], '/');
-		strncpy(currentpath_temp, currentpath, 256);//old
-		memset(currentpath,00,256);
-		strncpy(currentpath, p_recently_play[play_re], p-p_recently_play[play_re]);
-		if(currentpath[0]==0){
-			currentpath[0] = '/';
+		strncpy(currentpath_temp, currentpath, sizeof(currentpath_temp) - 1);
+		currentpath_temp[sizeof(currentpath_temp) - 1] = '\0';
+		if(!Recent_GetLoadedPathAt(play_re, game_total_SD, currentpath, sizeof(currentpath),
+			current_filename, sizeof(current_filename)))
+		{
+			strncpy(currentpath, currentpath_temp, sizeof(currentpath) - 1);
+			currentpath[sizeof(currentpath) - 1] = '\0';
+			return 0;
 		}
-		memset(current_filename,00,200);
-		strncpy(current_filename, p+1, 100);//remove directory path
 		pfilename = current_filename;
 	}
 

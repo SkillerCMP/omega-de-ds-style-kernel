@@ -6,6 +6,7 @@
 	.global  RTS_only_Return_address_L
 	.global  RTS_only_SAVE_key
 	.global  RTS_only_LOAD_key
+	.global  RTS_only_state_identity
 
 
 
@@ -196,6 +197,13 @@ restore2_IO:        @; IOaddress, offset
 @;------------------------------------------------------
 @;------------------------------------------------------
 call_Save:
+	@ Invalidate the previous state before overwriting any state payload.
+	mov 	r0,#0xA0
+	bl 		SetRampage
+	ldr 	r0,=0x0E00FFF0
+	adrl	r1,S_RTS_INVALID
+	mov 	r2,#0x10
+	bl 		WriteSram
 	@;adrl	r7,RTS_switch
 	@;ldr		r7,[r7]
 	@;cmp 	r7,#1
@@ -533,8 +541,12 @@ register_list:
 @;------------------------------------------------
 
 	.align
+S_RTS_INVALID:
+	.word 0x00000000,0x00000000,0x00000000,0x00000000
 S_RTS_FLAG:
- 	.byte  'E','Z','-','O','m','e','g','a','R','T','C','F','I','L','E','.'
+	.byte 'E','Z','R','T','S','O','0','1'
+RTS_only_state_identity:
+	.word 0x00000000,0x00000000	@ patched game code + ROM size
 	.align
 RTS_only_ReplaceIRQ_end:
    .end

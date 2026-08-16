@@ -28,6 +28,7 @@ extern void RTS_Sleep_key(void);
 extern void RTS_Reset_key(void);
 //extern void RTS_Wakeup_key(void);
 extern void RTS_switch(void);
+extern void RTS_state_identity(void);
 extern void Cheat_count(void);
 extern void CHEAT(void);
 extern void no_CHEAT_end(void);
@@ -38,6 +39,7 @@ extern void RTS_only_ReplaceIRQ_end(void);
 extern void RTS_only_Return_address_L(void);
 extern void RTS_only_SAVE_key(void);
 extern void RTS_only_LOAD_key(void);
+extern void RTS_only_state_identity(void);
 
 
 extern void Fire_Emblem_0378_patch_start(void);

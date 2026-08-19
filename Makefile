@@ -32,10 +32,12 @@ MUSIC		:=
 #---------------------------------------------------------------------------------
 ARCH	:=	-mthumb -mthumb-interwork
 
-CFLAGS	:=	-g -Wall -O\
-		-mcpu=arm7tdmi -mtune=arm7tdmi\
- 		-fomit-frame-pointer\
+CFLAGS	:=	-g -Wall -Os \
+		-mcpu=arm7tdmi -mtune=arm7tdmi \
+		-fomit-frame-pointer \
 		-ffast-math \
+		-ffunction-sections \
+		-fdata-sections \
 		$(ARCH)
 
 CFLAGS	+=	$(INCLUDE)
@@ -43,7 +45,7 @@ CFLAGS	+=	$(INCLUDE)
 CXXFLAGS	:=	$(CFLAGS) -fno-rtti -fno-exceptions
 
 ASFLAGS	:=	-g $(ARCH)
-LDFLAGS	=	-g $(ARCH) -Wl,-Map,$(notdir $*.map)
+LDFLAGS	=	-g $(ARCH) -Wl,-Map,$(notdir $*.map) -Wl,--gc-sections
 
 #---------------------------------------------------------------------------------
 # any extra libraries we wish to link with the project

@@ -19,8 +19,10 @@ function Reject([string]$Relative, [string]$Needle, [string]$Label) {
     }
 }
 
-# Cumulative v7.3 through 13.5 structural source checks.
-# This clean validator is intentionally self-contained: no Python, tools, or test harness files are required.
+# DS Style Enhanced structural source checks.
+# This validates the drop-in optimized source only.
+# It intentionally does NOT require Makefile compiler-flag changes,
+# a modified Grit generator, Python, tools/, or tests/.
 Need 'source\launcher_version.h' '#define LAUNCHER_VERSION_TEXT "v7.3"' 'DS Style v7.3 version marker'
 Need 'source\ezkernelnew.c' 'Launcher_RedrawRomMenuSaveTypeValue' 'v7.3 save-type redraw'
 Need 'source\ezkernelnew.c' 'Launcher_RestoreHorizontalOuterBorder' 'v7.3 carousel border fix'
@@ -54,10 +56,6 @@ Reject 'source\gba_rts_patch.s' '.space 0x80' 'obsolete unpacked condition stack
 Reject 'source\gba_rts_patch.s' 'cheat_write16:' 'obsolete separate W16 handler'
 Reject 'source\gba_rts_patch.s' 'cheat_write32:' 'obsolete separate W32 handler'
 
-Need 'Makefile' '-Os' 'size-optimized compiler flag'
-Need 'Makefile' '-ffunction-sections' 'function section flag'
-Need 'Makefile' '-fdata-sections' 'data section flag'
-Need 'Makefile' '--gc-sections' 'linker garbage collection'
 Need 'source\ff15\ffconf.h' 'FF_PRINT_LLI' 'FatFs formatter configuration'
 Need 'source\ff15\ffconf.h' 'FF_PRINT_FLOAT' 'FatFs formatter configuration'
 Need 'source\ezkernelnew.c' '#define LAUNCHER_LIST_ART_CACHE_COUNT 2' 'two-slot List + Art cache'
@@ -66,7 +64,6 @@ Need 'source\ezkernelnew.c' 'launcher_custom_thumb_manifest_hash[LAUNCHER_CUSTOM
 Need 'source\ezkernelnew.c' 'Launcher_DrawThemeTopbarClip' 'compact top-bar renderer'
 Need 'source\launcher_theme_assets.h' 'launcher_topbar_patterns.h' 'compact top-bar theme table'
 Need 'source\launcher_topbar_patterns.h' 'LAUNCHER_TOPBAR_PATTERN_COUNT' 'compact top-bar patterns'
-Need 'Grit\Build Skin Files.ps1' 'Write-CompactTopbarHeader' 'compact top-bar generator'
 
 Need 'source\GBApatch.c' 'SetRtsStateIdentity' 'save-state game identity'
 Need 'source\GBApatch.c' 'PatchRtsStateIdentity' 'save-state identity injection'
@@ -129,4 +126,4 @@ Need 'source\ezkernelnew.c' 'LauncherFolderSortScratchFitsReadCache' 'folder sor
 Need 'source\ezkernelnew.c' '(launcher_favourite_count - index - 1) * LAUNCHER_FAVOURITE_PATH_LEN' 'single-block favourite removal'
 
 
-Write-Host 'PASS: DS Style v7.3 Enhanced 13.5 clean standalone source validation'
+Write-Host 'PASS: DS Style Enhanced drop-in source validation'

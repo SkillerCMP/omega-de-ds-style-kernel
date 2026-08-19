@@ -14038,7 +14038,21 @@ int main(void) {
 	Launcher_LoadFavourites();
 	Read_last_launch_mode();
 	Launcher_SaveMigratedSettingsIfNeeded();
-	startup_quicklaunch_pending = (startup_keys_held & Launcher_AutoStartKeyMask()) ? 1 : 0;
+	{
+		u16 reset_key_mask =
+			(u16)(1u << Launcher_ReadKeySetting(assress_edit_rtshotkey_0, LAUNCHER_KEY_L)) |
+			(u16)(1u << Launcher_ReadKeySetting(assress_edit_rtshotkey_1, LAUNCHER_KEY_R)) |
+			(u16)(1u << Launcher_ReadKeySetting(assress_edit_rtshotkey_2, LAUNCHER_KEY_START));
+
+		/* Returning from a game through the in-game reset chord leaves those
+		keys physically held while the kernel starts.  Quick Start defaults to
+		START, so treating that reset chord as a startup shortcut can bypass
+		Boot Mode = Menu and immediately reuse the previous Clean/Addon mode. */
+		if(reset_key_mask && ((startup_keys_held & reset_key_mask) == reset_key_mask))
+			startup_quicklaunch_pending = 0;
+		else
+			startup_quicklaunch_pending = (startup_keys_held & Launcher_AutoStartKeyMask()) ? 1 : 0;
+	}
 
 	Check_save_flag();
 
@@ -15715,11 +15729,9 @@ u8 SD_list_MENU(u32 show_offset,	u32 file_select,u32 play_re )
 	u32 MENU_line=0;
 	u32 re_menu=1;
 	u32 MENU_max;
-	u32 ignore_b_frames=0;
 	u32 is_EMU;
 	//u32 continue_MENU = 0;
 	u16 keysdown;
-	u16 keysup;
 	u16 keys_released;
 	u16 keysrepeat;
 	u32 menu_scroll_delay = 0;
@@ -15871,10 +15883,13 @@ if (is_EMU == 0xff)
 
 	DrawPic((u16*)gImage_MENU, 36, 25, 168, 110, 1, 0, 1);//show menu pic
 	Show_MENU_btn();
-	/* Ignore a few initial B-release frames so opening this menu from the
-	start screen cannot be cancelled by stale input from the previous
-	screen. */
-	ignore_b_frames = 8;
+
+	/* Arm the boot-options popup from a clean input state.  A fixed number
+	of ignored B-release frames is not reliable after returning from a game:
+	a delayed release edge can arrive later and immediately close the popup.
+	Drain held keys and all pending edge events, then require a fresh press. */
+	Launcher_FlushInputForModal();
+
 	while(1)//3
 	{
 		if(re_menu)
@@ -15889,13 +15904,9 @@ if (is_EMU == 0xff)
 			menu_scroll_delay--;
 		scanKeys();
 		keysdown  = keysDown();
-		keysup  = keysUp();
 		keysrepeat = keysDownRepeat();
 		UIAudio_HandleKeysEx(keysdown, 0, 0, 0);
 		keys_released = keysUp();
-		if(ignore_b_frames)
-			ignore_b_frames--;
-
 		if ((keysdown & KEY_DOWN) || ((keysrepeat & KEY_DOWN) && menu_scroll_delay == 0)) {
 			if (MENU_line < MENU_max) {
         u32 first_press = (keysdown & KEY_DOWN) != 0;
@@ -15921,7 +15932,7 @@ if (is_EMU == 0xff)
 				menu_scroll_delay = first_press ? 10 : 5;
 			}
 		}
-		else if((keysup & KEY_B) && !ignore_b_frames)
+		else if(keysdown & KEY_B)
 		{
 			UIAudio_PlayBack();
 			gl_cheat_count = 0;

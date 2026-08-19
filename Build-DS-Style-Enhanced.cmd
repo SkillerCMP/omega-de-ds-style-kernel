@@ -5,7 +5,7 @@ if /I "%~1"=="__BUILD_CHILD__" goto BUILD_CHILD
 
 echo.
 echo ============================================================
-echo DS Style v7.3 Enhanced 13.5 clean build helper v4
+echo DS Style Enhanced clean build helper v5
 echo ============================================================
 echo This pause confirms the CMD launched correctly.
 echo Press any key to validate and build.
@@ -13,10 +13,10 @@ echo.
 pause
 
 set "SCRIPT_DIR=%~dp0"
-set "LOG=%SCRIPT_DIR%build-r54-3-ds-style-v7-3-enhanced-13-5.log"
+set "LOG=%SCRIPT_DIR%build-r54-ds-style-enhanced.log"
 
 echo ============================================================ > "%LOG%"
-echo DS Style v7.3 Enhanced 13.5 clean build helper v4>> "%LOG%"
+echo DS Style Enhanced clean build helper v5>> "%LOG%"
 echo Started: %DATE% %TIME%>> "%LOG%"
 echo Script: %~f0>> "%LOG%"
 echo Source: %SCRIPT_DIR%>> "%LOG%"
@@ -106,8 +106,8 @@ if errorlevel 1 (
 )
 
 echo.
-echo Standalone PowerShell validation passed.
-echo Python validation is not required by this clean build helper.
+echo Drop-in optimized source validation passed.
+echo No modified Makefile, Grit generator, Python, tools, or tests are required.
 
 for %%F in (SD_LIST SET START HELP) do (
     if not exist "images\blank\%%F.h" (

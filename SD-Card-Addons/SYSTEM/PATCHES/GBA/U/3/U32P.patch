@@ -1,0 +1,14 @@
+# DS Style GBA Auto Patch
+# Plain-text external game compatibility profile.
+# IRQ32 uses ROM BYTE offsets and is validated against 03007FFC/03FFFFFC.
+# ADD32 feeds the existing deferred Add2()/iPatchInfo2 pipeline.
+# PATCH16/PATCH32 are direct ROM writes; TRIM overrides patch placement.
+# SEARCH32PAIR is a bounded legacy search/write operation.
+FORMAT=2
+GAME=U32P
+
+VARIANT=1
+# SOURCE=2013 - Boktai 2 - Solar Boy Django(EU).zip
+IRQ32=00000340
+IRQ32=0022FD14
+END

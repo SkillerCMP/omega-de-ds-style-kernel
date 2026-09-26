@@ -1,0 +1,17 @@
+# DS Style GBA Auto Patch
+# Plain-text external game compatibility profile.
+# IRQ32 uses ROM BYTE offsets and is validated against 03007FFC/03FFFFFC.
+# ADD32 feeds the existing deferred Add2()/iPatchInfo2 pipeline.
+# PATCH16/PATCH32 are direct ROM writes; TRIM overrides patch placement.
+# SEARCH32PAIR is a bounded legacy search/write operation.
+FORMAT=2
+GAME=ARJJ
+
+VARIANT=1
+# SOURCE=0509 - Custom Robo GX(JP).zip
+IRQ32=00000A14
+IRQ32=003F0D8C
+IRQ32=003F0E70
+IRQ32=003F75E8
+IRQ32=003F75EC
+END

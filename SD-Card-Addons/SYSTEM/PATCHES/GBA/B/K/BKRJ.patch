@@ -1,0 +1,20 @@
+# DS Style GBA Auto Patch
+# Plain-text external game compatibility profile.
+# IRQ32 uses ROM BYTE offsets and is validated against 03007FFC/03FFFFFC.
+# ADD32 feeds the existing deferred Add2()/iPatchInfo2 pipeline.
+# PATCH16/PATCH32 are direct ROM writes; TRIM overrides patch placement.
+# SEARCH32PAIR is a bounded legacy search/write operation.
+FORMAT=2
+GAME=BKRJ
+
+VARIANT=1
+# SOURCE=2034 - No no no Puzzle Chailien(JP).zip
+IRQ32=0000023C
+IRQ32=0000090C
+IRQ32=007C923C
+IRQ32=007C9448
+IRQ32=007C94F4
+IRQ32=007E023C
+IRQ32=007E0448
+IRQ32=007E04F4
+END

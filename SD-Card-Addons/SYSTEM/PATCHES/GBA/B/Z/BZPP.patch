@@ -1,0 +1,25 @@
+# DS Style GBA Auto Patch
+# Plain-text external game compatibility profile.
+# IRQ32 uses ROM BYTE offsets and is validated against 03007FFC/03FFFFFC.
+# ADD32 feeds the existing deferred Add2()/iPatchInfo2 pipeline.
+# PATCH16/PATCH32 are direct ROM writes; TRIM overrides patch placement.
+# SEARCH32PAIR is a bounded legacy search/write operation.
+FORMAT=2
+GAME=BZPP
+
+VARIANT=1
+# SOURCE=2213 - Dr. Mario & Puzzle League(EU).zip
+IRQ32=00004DA4
+IRQ32=000A42A4
+IRQ32=00232834
+IRQ32=002652A0
+IRQ32=00297DE0
+IRQ32=002CA7F4
+IRQ32=002FCB94
+IRQ32=00403630
+IRQ32=0049029C
+IRQ32=004BC768
+IRQ32=004E90BC
+IRQ32=00515A00
+IRQ32=005423E4
+END

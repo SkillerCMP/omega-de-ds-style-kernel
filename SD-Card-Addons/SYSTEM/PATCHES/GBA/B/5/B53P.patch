@@ -1,0 +1,20 @@
+# DS Style GBA Auto Patch
+# Plain-text external game compatibility profile.
+# IRQ32 uses ROM BYTE offsets and is validated against 03007FFC/03FFFFFC.
+# ADD32 feeds the existing deferred Add2()/iPatchInfo2 pipeline.
+# PATCH16/PATCH32 are direct ROM writes; TRIM overrides patch placement.
+# SEARCH32PAIR is a bounded legacy search/write operation.
+FORMAT=2
+GAME=B53P
+
+VARIANT=1
+# SOURCE=2186 - 2 Games in 1 - Spyro Fusion + Crash Bandicoot Fusion(EU).zip
+IRQ32=0000BCE4
+IRQ32=00F58CC0
+IRQ32=00F7BCD8
+IRQ32=00FBB11C
+IRQ32=00FBB30C
+IRQ32=0100AED8
+IRQ32=01F219AC
+IRQ32=01F44998
+END

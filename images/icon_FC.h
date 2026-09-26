@@ -3,12 +3,12 @@
 
 //======================================================================
 //
-//	gImage_icon_FC, 16x14@16,
+//	gImage_icon_FC, 16x14@16, 
 //	+ bitmap not compressed
 //	Total size: 448 = 448
 //
-//	Time-stamp: 2020-05-11, 13:08:58
-//	Exported by Cearn's GBA Image Transmogrifier, v0.8.3
+//	Time-stamp: 2026-09-26, 00:57:36
+//	Exported by Cearn's GBA Image Transmogrifier, v0.8.6
 //	( http://www.coranac.com/projects/#grit )
 //
 //======================================================================

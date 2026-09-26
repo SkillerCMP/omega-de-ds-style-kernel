@@ -1,0 +1,19 @@
+# DS Style GBA Auto Patch
+# Plain-text external game compatibility profile.
+# IRQ32 uses ROM BYTE offsets and is validated against 03007FFC/03FFFFFC.
+# ADD32 feeds the existing deferred Add2()/iPatchInfo2 pipeline.
+# PATCH16/PATCH32 are direct ROM writes; TRIM overrides patch placement.
+# SEARCH32PAIR is a bounded legacy search/write operation.
+FORMAT=2
+GAME=BWBI
+
+VARIANT=1
+# SOURCE=2703 - 2 Games in 1 - Disney Principesse + Koda, Fratello Orso(IT).zip
+IRQ32=000000FC
+IRQ32=000004F8
+IRQ32=007F02FC
+IRQ32=007F0DBC
+IRQ32=00821F1C
+# LEGACY_TRIM_SOURCE=2703 - 2 Games in 1 - Disney Principesse + Koda, Fratello Orso(IT) cant work
+TRIM=007FEC30
+END

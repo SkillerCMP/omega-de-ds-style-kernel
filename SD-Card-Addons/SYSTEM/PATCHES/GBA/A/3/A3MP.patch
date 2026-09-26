@@ -1,0 +1,22 @@
+# DS Style GBA Auto Patch
+# Plain-text external game compatibility profile.
+# IRQ32 uses ROM BYTE offsets and is validated against 03007FFC/03FFFFFC.
+# ADD32 feeds the existing deferred Add2()/iPatchInfo2 pipeline.
+# PATCH16/PATCH32 are direct ROM writes; TRIM overrides patch placement.
+# SEARCH32PAIR is a bounded legacy search/write operation.
+FORMAT=2
+GAME=A3MP
+
+VARIANT=1
+# SOURCE=0617 - Magical Quest Starring Mickey & Minnie(EU).zip
+IRQ32=00000104
+IRQ32=000003AC
+IRQ32=000E82F0
+IRQ32=000E8598
+IRQ32=0011BAB8
+IRQ32=0011BD60
+IRQ32=0014C928
+IRQ32=0014CBD0
+IRQ32=0017DDC0
+IRQ32=0017E068
+END

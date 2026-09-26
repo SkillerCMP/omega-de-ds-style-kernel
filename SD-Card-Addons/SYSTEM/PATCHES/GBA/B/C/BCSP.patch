@@ -1,0 +1,14 @@
+# DS Style GBA Auto Patch
+# Plain-text external game compatibility profile.
+# IRQ32 uses ROM BYTE offsets and is validated against 03007FFC/03FFFFFC.
+# ADD32 feeds the existing deferred Add2()/iPatchInfo2 pipeline.
+# PATCH16/PATCH32 are direct ROM writes; TRIM overrides patch placement.
+# SEARCH32PAIR is a bounded legacy search/write operation.
+FORMAT=2
+GAME=BCSP
+
+VARIANT=1
+# SOURCE=2041 - 2 Games in 1 - V-Rally 3 + Stuntman(EU).zip
+IRQ32=000C9324
+IRQ32=004A9EF8
+END

@@ -1,88 +1,12 @@
 # Changelog
 
-## DS Style v7.3
+## DS Style 7.4c
 
-- Fixed translated save-type labels overlapping the detected save type in the game-launch menu, and limited save-type changes to the affected value.
-- Refined List + Art redraw handling when moving between entries with and without artwork or switching from List view.
-- Added source support for full-screen themes without a separate top bar.
-- Fixed the clock and page-number area not refreshing correctly on Help screens.
-- Refined cheat-screen redraw behaviour, including smoother list movement, clean counter changes and immediate updates to mutually exclusive selections.
-- Fixed artwork border flicker in the horizontal carousel.
+Initial source release.
 
-## DS Style v7.2
-
-- Fixed Chinese text rendering on the game loading screen.
-- Fixed custom backgrounds being shifted or repeated while scrolling in List and List + Art views.
-
-## DS Style v7.1
-
-- Added List + Art view, combining list navigation with a floating thumbnail at the top, centre or bottom of the screen.
-- Refined list, carousel and pop-up redraw behaviour for smoother menu navigation and less flicker.
-- Fixed translated text handling in game-launch pop-up menus, including Chinese text.
-- Improved input handling while artwork loads and when moving between Settings, SD Card and NOR Flash.
-- Kept the launcher clock independent from the In-game RTC option, matching the official kernel behaviour.
-- Added general menu refinements and updated the built-in guidance.
-
-## DS Style v7.0
-
-- Added a Hide system files setting for keeping kernel, system, and metadata files out of the root file browser.
-- Added Settings > Load style for installing `.bin` kernels from `SYSTEM/KERNELS`.
-- Added 12-hour and 24-hour clock format options.
-- Added an Art border option for drawing a one-pixel outline around the selected carousel artwork.
-- Added a Rounded corners option for carousel artwork and Start screen artwork.
-- Added Clean list and List folders options for simpler file browsing.
-- Added vertical and horizontal carousel side-art alignment options.
-- Added empty folder and empty favourites messages.
-- Added thumbnail artwork support for games written to NOR.
-- Added Thai language support.
-- Reworked the Settings and Help pages into clearer categories and in-kernel guidance screens.
-- Added built-in Using DS Style help pages with clear setting explanations.
-- Overhauled the cheat screen and cheat selection behaviour.
-- Added general user-interface refinements across menus, pop-ups and carousel views.
-- Refined splash-screen timing so boot waits for the startup sound without lingering longer than needed.
-- Refined settings tabbing so nested Settings pages are remembered when moving to SD Card or NOR Flash and back.
-
-## DS Style v6.9
-
-- Improved launcher stability by reducing RAM pressure in the menu.
-- Added a safety limit for cheat entries to match the space available in the in-game patch.
-- Refined list-view scrolling, redraw behaviour, and navigation consistency across launcher menus.
-- Refined the sound system for safer, more reliable audio playback during menu navigation.
-
-## DS Style v6.8
-
-- Fixed translated settings values resetting or loading incorrectly after restarting.
-- Improved accented character support for SD card filenames.
-- Corrected the language options written to SETTINGS.TXT.
-
-## DS Style v6.7
-
-- Split Start screen On/Off from the Last played/Favourites source setting.
-- Select on the Start screen now only switches between Last played and Favourites.
-- Start on the SD page now opens Recently Played, then cycles between Recently Played and Favourites.
-- L and R also switch between Recently Played and Favourites while inside those lists.
-
-## DS Style v6.6
-
-- Added custom thumbnail support for folders and all files. Improved thumbnail scraper integration.
-- Each CUSTOM folder supports up to 256 images due to the GBA's RAM limitations.
-- Replaced the hardcoded GBA-folder preview with an editable CUSTOM artwork example.
-- Cached the available custom artwork names so normal file browsing remains responsive.
-- Added support for both 120 x 80 title thumbnails and 80 x 80 box thumbnails in the CUSTOM folders.
-
-## DS Style v6.5
-
-- Added an Off option for the Start screen source, allowing startup to go straight to the SD browser.
-- Prevented B from returning to the Start screen when the Start screen is disabled.
-- Updated game launch menus to use held-button scrolling without wrapping at the top or bottom.
-- Continued parity fixes shared with the original OMEGA source where applicable.
-
-## DS Style v6.4
-
-- Added multi-language launcher support.
-- Added Chinese language handling while keeping Latin text on the DS Style font.
-- Added customisable launcher text through DS Style Customiser.
-- Added Start screen layout customisation support.
-- Added thumbnail border option support.
-- Added safer file copy, backup, thumbnail-read, and directory bounds handling.
-- Updated both Omega DE and Original Omega source lines to stay aligned where features overlap.
+- DS Style 7.4c launcher branding.
+- External GBA compatibility database under `SYSTEM/PATCHES/GBA/`.
+- Addon and cheat support.
+- RTS3 GBA savestate core and RTS3 inspection/maintenance tools.
+- Windows/devkitARM build helpers.
+- Complete Grit image pipeline: verifies all 99 PNG/BMP-backed image headers against the known-good arrays, then regenerates the headers before the kernel build.

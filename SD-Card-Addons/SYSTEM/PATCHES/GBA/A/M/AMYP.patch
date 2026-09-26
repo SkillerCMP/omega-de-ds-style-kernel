@@ -1,0 +1,21 @@
+# DS Style GBA Auto Patch
+# Plain-text external game compatibility profile.
+# IRQ32 uses ROM BYTE offsets and is validated against 03007FFC/03FFFFFC.
+# ADD32 feeds the existing deferred Add2()/iPatchInfo2 pipeline.
+# PATCH16/PATCH32 are direct ROM writes; TRIM overrides patch placement.
+# SEARCH32PAIR is a bounded legacy search/write operation.
+FORMAT=2
+GAME=AMYP
+
+VARIANT=1
+# SOURCE=0944 - Bomberman Max 2 - Red Advance(EU).zip
+IRQ32=000000FC
+IRQ32=000003E4
+IRQ32=000007F0
+IRQ32=0081EED4
+IRQ32=0081F1B8
+IRQ32=00848CA4
+IRQ32=00848F88
+IRQ32=00873130
+IRQ32=00873414
+END

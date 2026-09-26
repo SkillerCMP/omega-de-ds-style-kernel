@@ -173,11 +173,9 @@ const char en_make_RTS[]=DSTEXT_STATUS_MAKE_RTS;
 const char en_check_pat[]=DSTEXT_STATUS_CHECK_PATCH;
 const char en_make_pat[]=DSTEXT_STATUS_MAKE_PATCH;
 
-const char en_please_wait[]="Please Wait...";
 
 const char en_loading_game[]=DSTEXT_STATUS_LOADING_ROM;
 
-const char en_no_roms[]=DSTEXT_STATUS_NO_ROMS;
 
 const char en_engine[]="   Engine";
 const char en_use_engine[]="Fast Patch Engine";
@@ -188,7 +186,6 @@ const char en_START_help[]="Open recently played list";
 const char en_SELECT_help[]="Toggle game thumbnails";
 const char en_L_A_help[]="Invert cold start option";
 const char en_LSTART_help[]="Delete file";
-const char en_LSELECT_help[]="Delete save file";
 const char en_online_manual[]="Online manual";
 
 const char en_no_game_played[]="No recently played games yet...";
@@ -284,7 +281,6 @@ const char th_hot_key[]      = "ปุ่มลัดสลีป";
 const char th_hot_key2[]     = "ปุ่มลัดเมนู";
 
 const char th_language[]     = " ภาษา";
-const char th_lang[]         = "ไทย";
 const char th_zh_lang[]      = "จีน";
 const char th_set_btn[]      = "ตั้งค่า";
 const char th_ok_btn[]       = "ตกลง";

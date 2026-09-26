@@ -1,0 +1,20 @@
+# DS Style GBA Auto Patch
+# Plain-text external game compatibility profile.
+# IRQ32 uses ROM BYTE offsets and is validated against 03007FFC/03FFFFFC.
+# ADD32 feeds the existing deferred Add2()/iPatchInfo2 pipeline.
+# PATCH16/PATCH32 are direct ROM writes; TRIM overrides patch placement.
+# SEARCH32PAIR is a bounded legacy search/write operation.
+FORMAT=2
+GAME=AFBP
+
+VARIANT=1
+# SOURCE=1054 - Frogger's Adventures 2 - The Lost Wand(EU).zip
+IRQ32=000000FC
+IRQ32=000003F8
+IRQ32=00769644
+IRQ32=0076F320
+IRQ32=00799DB8
+IRQ32=0079FA94
+IRQ32=007CEAB0
+IRQ32=007D478C
+END

@@ -1,0 +1,16 @@
+# DS Style GBA Auto Patch
+# Plain-text external game compatibility profile.
+# IRQ32 uses ROM BYTE offsets and is validated against 03007FFC/03FFFFFC.
+# ADD32 feeds the existing deferred Add2()/iPatchInfo2 pipeline.
+# PATCH16/PATCH32 are direct ROM writes; TRIM overrides patch placement.
+# SEARCH32PAIR is a bounded legacy search/write operation.
+FORMAT=2
+GAME=A5NE
+
+VARIANT=1
+# SOURCE=1055 - Donkey Kong Country(US).zip
+IRQ32=00000230
+IRQ32=0000035C
+IRQ32=0002C1AC
+IRQ32=0002C370
+END

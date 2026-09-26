@@ -1,0 +1,16 @@
+# DS Style GBA Auto Patch
+# Plain-text external game compatibility profile.
+# IRQ32 uses ROM BYTE offsets and is validated against 03007FFC/03FFFFFC.
+# ADD32 feeds the existing deferred Add2()/iPatchInfo2 pipeline.
+# PATCH16/PATCH32 are direct ROM writes; TRIM overrides patch placement.
+# SEARCH32PAIR is a bounded legacy search/write operation.
+FORMAT=2
+GAME=ABSE
+
+VARIANT=1
+# SOURCE=0058 - Bomberman Tournament(UE).zip
+IRQ32=00000218
+IRQ32=000004A4
+IRQ32=00385AB0
+IRQ32=00385BA8
+END

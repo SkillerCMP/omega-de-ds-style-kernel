@@ -1,0 +1,17 @@
+# DS Style GBA Auto Patch
+# Plain-text external game compatibility profile.
+# IRQ32 uses ROM BYTE offsets and is validated against 03007FFC/03FFFFFC.
+# ADD32 feeds the existing deferred Add2()/iPatchInfo2 pipeline.
+# PATCH16/PATCH32 are direct ROM writes; TRIM overrides patch placement.
+# SEARCH32PAIR is a bounded legacy search/write operation.
+FORMAT=2
+GAME=BCVE
+
+VARIANT=1
+# SOURCE=1936 - 2 Games in 1 - Scooby-Doo! - Mystery Mayhem + Scooby-Doo and the Cyber Chase(US).zip
+IRQ32=00000100
+IRQ32=00400220
+IRQ32=00402EB4
+IRQ32=007FBA8C
+IRQ32=007FC1D0
+END

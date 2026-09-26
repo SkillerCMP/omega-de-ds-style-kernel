@@ -1,0 +1,18 @@
+# DS Style GBA Auto Patch
+# Plain-text external game compatibility profile.
+# IRQ32 uses ROM BYTE offsets and is validated against 03007FFC/03FFFFFC.
+# ADD32 feeds the existing deferred Add2()/iPatchInfo2 pipeline.
+# PATCH16/PATCH32 are direct ROM writes; TRIM overrides patch placement.
+# SEARCH32PAIR is a bounded legacy search/write operation.
+FORMAT=2
+GAME=A7SP
+
+VARIANT=1
+# SOURCE=0652 - Smurfs, The - The Revenge of the Smurfs(EU).zip
+IRQ32=0001F5B8
+IRQ32=002FAF80
+IRQ32=00326F24
+IRQ32=0034EE40
+IRQ32=00379138
+IRQ32=003A2CB4
+END

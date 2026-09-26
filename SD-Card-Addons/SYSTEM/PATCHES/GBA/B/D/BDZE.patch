@@ -1,0 +1,17 @@
+# DS Style GBA Auto Patch
+# Plain-text external game compatibility profile.
+# IRQ32 uses ROM BYTE offsets and is validated against 03007FFC/03FFFFFC.
+# ADD32 feeds the existing deferred Add2()/iPatchInfo2 pipeline.
+# PATCH16/PATCH32 are direct ROM writes; TRIM overrides patch placement.
+# SEARCH32PAIR is a bounded legacy search/write operation.
+FORMAT=2
+GAME=BDZE
+
+VARIANT=1
+# SOURCE=2603 - 2 Games in 1 - Monsters, Inc. + Finding Nemo(US).zip
+IRQ32=000001C0
+IRQ32=00000654
+IRQ32=00417700
+IRQ32=00BEEA50
+IRQ32=00BEFD48
+END

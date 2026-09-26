@@ -1,0 +1,15 @@
+# DS Style GBA Auto Patch
+# Plain-text external game compatibility profile.
+# IRQ32 uses ROM BYTE offsets and is validated against 03007FFC/03FFFFFC.
+# ADD32 feeds the existing deferred Add2()/iPatchInfo2 pipeline.
+# PATCH16/PATCH32 are direct ROM writes; TRIM overrides patch placement.
+# SEARCH32PAIR is a bounded legacy search/write operation.
+FORMAT=2
+GAME=A9ME
+
+VARIANT=1
+# SOURCE=2602 - Motoracer Advance(US).zip
+NO_IRQ=1
+# LEGACY_ADD32_SOURCE=2602 - Motoracer Advance(US)
+ADD32=00002654,E5810FF4
+END

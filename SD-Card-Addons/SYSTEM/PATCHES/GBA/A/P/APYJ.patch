@@ -1,0 +1,22 @@
+# DS Style GBA Auto Patch
+# Plain-text external game compatibility profile.
+# IRQ32 uses ROM BYTE offsets and is validated against 03007FFC/03FFFFFC.
+# ADD32 feeds the existing deferred Add2()/iPatchInfo2 pipeline.
+# PATCH16/PATCH32 are direct ROM writes; TRIM overrides patch placement.
+# SEARCH32PAIR is a bounded legacy search/write operation.
+FORMAT=2
+GAME=APYJ
+
+VARIANT=1
+# SOURCE=0143 - Minna de Puyo Puyo(JP).zip
+IRQ32=000000FC
+IRQ32=0001FC88
+IRQ32=005696EC
+IRQ32=005735B0
+IRQ32=00597910
+IRQ32=005A26B0
+IRQ32=005CF454
+IRQ32=005D9318
+IRQ32=005FCE78
+IRQ32=00607C18
+END

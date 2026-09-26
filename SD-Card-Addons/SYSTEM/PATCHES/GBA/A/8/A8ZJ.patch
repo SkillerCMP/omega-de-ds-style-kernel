@@ -1,0 +1,21 @@
+# DS Style GBA Auto Patch
+# Plain-text external game compatibility profile.
+# IRQ32 uses ROM BYTE offsets and is validated against 03007FFC/03FFFFFC.
+# ADD32 feeds the existing deferred Add2()/iPatchInfo2 pipeline.
+# PATCH16/PATCH32 are direct ROM writes; TRIM overrides patch placement.
+# SEARCH32PAIR is a bounded legacy search/write operation.
+FORMAT=2
+GAME=A8ZJ
+
+VARIANT=1
+# SOURCE=1124 - Shin Megami Tensei Devil Children - Puzzle de Call!(JP).zip
+IRQ32=00000124
+IRQ32=0000034C
+IRQ32=000195B4
+IRQ32=0001AD34
+IRQ32=0001D40C
+IRQ32=0001F89C
+IRQ32=000206B4
+IRQ32=0032CFF8
+IRQ32=0032D220
+END

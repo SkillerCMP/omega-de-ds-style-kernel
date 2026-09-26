@@ -1,0 +1,15 @@
+# DS Style GBA Auto Patch
+# Plain-text external game compatibility profile.
+# IRQ32 uses ROM BYTE offsets and is validated against 03007FFC/03FFFFFC.
+# ADD32 feeds the existing deferred Add2()/iPatchInfo2 pipeline.
+# PATCH16/PATCH32 are direct ROM writes; TRIM overrides patch placement.
+# SEARCH32PAIR is a bounded legacy search/write operation.
+FORMAT=2
+GAME=BX4E
+
+VARIANT=1
+# SOURCE=2100 - 2 Games in 1 - Tony Hawk's Underground + Kelly Slater's Pro Surfer(UE).zip
+IRQ32=0000011C
+IRQ32=007D7DD0
+IRQ32=00830848
+END

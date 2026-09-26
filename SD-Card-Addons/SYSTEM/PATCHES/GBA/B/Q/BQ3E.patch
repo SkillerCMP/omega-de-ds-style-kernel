@@ -1,0 +1,19 @@
+# DS Style GBA Auto Patch
+# Plain-text external game compatibility profile.
+# IRQ32 uses ROM BYTE offsets and is validated against 03007FFC/03FFFFFC.
+# ADD32 feeds the existing deferred Add2()/iPatchInfo2 pipeline.
+# PATCH16/PATCH32 are direct ROM writes; TRIM overrides patch placement.
+# SEARCH32PAIR is a bounded legacy search/write operation.
+FORMAT=2
+GAME=BQ3E
+
+VARIANT=1
+# SOURCE=2617 - Rayman - Raving Rabbids(US).zip
+IRQ32=00000318
+IRQ32=00003510
+IRQ32=00009004
+IRQ32=00026840
+IRQ32=00026E24
+IRQ32=0002AC10
+IRQ32=00030568
+END

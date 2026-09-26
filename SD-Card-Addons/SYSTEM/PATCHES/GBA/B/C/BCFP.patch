@@ -1,0 +1,17 @@
+# DS Style GBA Auto Patch
+# Plain-text external game compatibility profile.
+# IRQ32 uses ROM BYTE offsets and is validated against 03007FFC/03FFFFFC.
+# ADD32 feeds the existing deferred Add2()/iPatchInfo2 pipeline.
+# PATCH16/PATCH32 are direct ROM writes; TRIM overrides patch placement.
+# SEARCH32PAIR is a bounded legacy search/write operation.
+FORMAT=2
+GAME=BCFP
+
+VARIANT=1
+# SOURCE=2064 - Charlie and the Chocolate Factory(EU).zip
+IRQ32=00000234
+IRQ32=000004FC
+IRQ32=0000154C
+IRQ32=00001604
+IRQ32=00783C9C
+END

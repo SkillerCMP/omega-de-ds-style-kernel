@@ -1,0 +1,17 @@
+# DS Style GBA Auto Patch
+# Plain-text external game compatibility profile.
+# IRQ32 uses ROM BYTE offsets and is validated against 03007FFC/03FFFFFC.
+# ADD32 feeds the existing deferred Add2()/iPatchInfo2 pipeline.
+# PATCH16/PATCH32 are direct ROM writes; TRIM overrides patch placement.
+# SEARCH32PAIR is a bounded legacy search/write operation.
+FORMAT=2
+GAME=BP9E
+
+VARIANT=1
+# SOURCE=1774 - World Championship Poker(US).zip
+IRQ32=000000FC
+IRQ32=00000500
+IRQ32=0000DA78
+IRQ32=0009E920
+IRQ32=0009ECB8
+END

@@ -1,0 +1,23 @@
+# DS Style GBA Auto Patch
+# Plain-text external game compatibility profile.
+# IRQ32 uses ROM BYTE offsets and is validated against 03007FFC/03FFFFFC.
+# ADD32 feeds the existing deferred Add2()/iPatchInfo2 pipeline.
+# PATCH16/PATCH32 are direct ROM writes; TRIM overrides patch placement.
+# SEARCH32PAIR is a bounded legacy search/write operation.
+FORMAT=2
+GAME=BI4E
+
+VARIANT=1
+# SOURCE=2775 - Four Pack Racing - GT Advance + GT Advance 2 + GT Advance 3 + Moto GP(US).zip
+IRQ32=000001E8
+IRQ32=00001F38
+IRQ32=004001A4
+IRQ32=00400810
+IRQ32=00C001B0
+IRQ32=00C008F8
+IRQ32=00C0489C
+IRQ32=014000FC
+IRQ32=01402AA8
+IRQ32=01C00694
+IRQ32=01C007E0
+END

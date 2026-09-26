@@ -1,0 +1,22 @@
+# DS Style GBA Auto Patch
+# Plain-text external game compatibility profile.
+# IRQ32 uses ROM BYTE offsets and is validated against 03007FFC/03FFFFFC.
+# ADD32 feeds the existing deferred Add2()/iPatchInfo2 pipeline.
+# PATCH16/PATCH32 are direct ROM writes; TRIM overrides patch placement.
+# SEARCH32PAIR is a bounded legacy search/write operation.
+FORMAT=2
+GAMEHEX=00000000
+
+VARIANT=1
+# SOURCE=2314 - GBADev 2004Mbit Competition(US).zip
+IRQ32=000341B0
+IRQ32=000A41BC
+IRQ32=000F01BC
+IRQ32=0016C274
+IRQ32=001EC3B4
+IRQ32=001F0A20
+IRQ32=00254F2C
+IRQ32=002B01BC
+IRQ32=002F8788
+IRQ32=003301BC
+END

@@ -1,83 +1,55 @@
-# DS Style Kernel for EZ-FLASH OMEGA Definitive Edition
-<p align="center">
-  <a href="https://github.com/SkillerCMP/omega-de-ds-style-kernel/releases">
-    <img
-      alt="GitHub Downloads - All Releases"
-      src="https://img.shields.io/github/downloads/SkillerCMP/omega-de-ds-style-kernel/total?style=social"
-    >
-  </a>
-  <a href="https://github.com/SkillerCMP/omega-de-ds-style-kernel/releases/latest">
-    <img
-      alt="GitHub Downloads - Latest Release"
-      src="https://img.shields.io/github/downloads/SkillerCMP/omega-de-ds-style-kernel/latest/total?style=social"
-    >
-  </a>
-</p>
-DS Style is a custom kernel for the **EZ-FLASH OMEGA Definitive Edition**. It is based on the official EZ-FLASH OMEGA DE kernel source and Sterophonick's SimpleLight custom kernel and replaces the stock launcher with a Nintendo DS-inspired interface, theme system, thumbnail views, language options, and related quality-of-life changes.
+# DS Style 7.4c
 
-> [!WARNING]
-> This repository is for the **EZ-FLASH OMEGA Definitive Edition only**. Do not flash this build to the original EZ-FLASH OMEGA.
+Source release for **DS Style 7.4c** for the EZ-FLASH OMEGA Definitive Edition.
 
-## User Guide
+The launcher displays **DS Style 7.4c** on screen. GBA savestates use the RTS3 hardware-checkpoint core.
 
-Read the complete [DS Style User Guide](https://frankiet19.github.io/omega-de-ds-style-kernel/) for installation, everyday use, artwork, customisation and troubleshooting.
+## Build
 
-## Web
-
-- [DS Style homepage](https://frankiet19.github.io/omega-de-ds-style-kernel/project/)
-- [DS Style Manager](https://frankiet19.github.io/omega-de-ds-style-kernel/manager/) - guided installation, starting preferences, artwork and style tools
-
-## Features
-
-- DS-style launcher interface
-- Multiple colour themes and light/dark presentation support
-- Customisable launcher assets through DS Style Customiser
-- List, List + Art, horizontal carousel, and vertical carousel file views
-- Title and box-art thumbnail modes
-- Favourite and recent game support
-- Multi-language launcher text, including Chinese and Thai
-- UI sounds
-- Runtime settings stored in readable `SYSTEM/SETTINGS.TXT`
-
-## Building
-
-Install devkitPro/devkitARM, then run:
-
-```bat
-build.bat
-```
-
-The build script outputs:
+On Windows with the existing devkitARM toolchain installed, run:
 
 ```text
-ezkernelnew.bin
+Build-DS-Style-Enhanced.cmd
 ```
 
-Copy `ezkernelnew.bin` to the root of the SD card and boot the cartridge while holding **R** to update the kernel.
+The build helper first verifies the editable PNG/BMP graphics by regenerating all 99 compiled image assets with the bundled Grit tool and comparing their image-array data with the known-good headers. If every asset matches, it regenerates the image headers, performs source validation and the native RTS assembly preflight, then builds the kernel. A successful native build produces `ezkernelnew.bin`.
 
-## Skin Assets
+The image verification is intentionally strict: a changed picture that no longer reproduces the current compiled asset stops the build before any header is replaced. `Grit\Build Skin Files.bat` runs the same complete graphics pipeline by itself.
 
-Theme image headers are generated from the files in `images/` using:
+Build support files:
 
-```bat
-Grit\Build Skin Files.bat
+- `Build-DS-Style-Enhanced.ps1`
+- `Build-RTS-Assembly-Preflight.ps1`
+- `Makefile`
+
+## SD card patches
+
+All packaged GBA compatibility patch profiles are contained under:
+
+```text
+SD-Card-Addons/SYSTEM/PATCHES/GBA/
 ```
 
-Run this before building if you edit the theme BMP/PNG/JPG assets.
+The files directly under `SD-Card-Addons/SYSTEM/PATCHES/` document and verify that patch database. Copy the `SD-Card-Addons/SYSTEM` folder to the root of the SD card and merge it with the existing `SYSTEM` folder. At runtime the kernel still loads these profiles from `/SYSTEM/PATCHES/GBA/`.
 
-## Customising
+`SD-Card-Addons/` also contains the optional companion text/Markdown plug-ins.
 
-For normal users, the recommended route is **DS Style Customiser**, which creates a private project copy, edits the assets/settings, and builds the kernel without modifying this source tree directly.
+## Savestates
 
-## Credits
+GBA savestates use RTS3. The source includes the current RTS3 inspector and maintenance tools under `tools/`.
 
-- Original kernel source by EZ-FLASH
-- SimpleLight custom kernel by Sterophonick
-- DS Style custom kernel by FrankieT19
-- Thai language support by aidiadayo
-- Case-sensitive `HZK12.h` include fix by Kekun
-- FatFs by ChaN, as used by the upstream kernel
+```text
+python tools/inspect_rts3.py "Game.rts"
+```
+
+## Documentation
+
+The user guide is:
+
+```text
+docs/DS Style User Guide.pdf
+```
 
 ## License
 
-This project follows the license terms provided with the original EZ-FLASH kernel source. See `LICENSE`.
+See `LICENSE` and the licenses supplied with third-party components in their respective directories.

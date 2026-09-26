@@ -1,0 +1,26 @@
+# DS Style GBA Auto Patch
+# Plain-text external game compatibility profile.
+# IRQ32 uses ROM BYTE offsets and is validated against 03007FFC/03FFFFFC.
+# ADD32 feeds the existing deferred Add2()/iPatchInfo2 pipeline.
+# PATCH16/PATCH32 are direct ROM writes; TRIM overrides patch placement.
+# SEARCH32PAIR is a bounded legacy search/write operation.
+FORMAT=2
+GAME=BW7P
+
+VARIANT=1
+# SOURCE=2750 - 2 Games in 1 - Sonic Battle + Chu Chu Rocket!(EU).zip
+IRQ32=000000FC
+IRQ32=00002B68
+IRQ32=002001A0
+IRQ32=0020073C
+IRQ32=005C8260
+IRQ32=005C842C
+IRQ32=005CC0CC
+IRQ32=005CC658
+IRQ32=010000FC
+IRQ32=01016224
+IRQ32=01016290
+IRQ32=01016374
+IRQ32=01018528
+IRQ32=01F1C0F8
+END

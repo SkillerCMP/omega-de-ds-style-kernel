@@ -1,0 +1,20 @@
+# DS Style GBA Auto Patch
+# Plain-text external game compatibility profile.
+# IRQ32 uses ROM BYTE offsets and is validated against 03007FFC/03FFFFFC.
+# ADD32 feeds the existing deferred Add2()/iPatchInfo2 pipeline.
+# PATCH16/PATCH32 are direct ROM writes; TRIM overrides patch placement.
+# SEARCH32PAIR is a bounded legacy search/write operation.
+FORMAT=2
+GAME=B8SE
+
+VARIANT=1
+# SOURCE=2394 - 2 Games in 1 - Spyro - Season of Ice + Spyro 2 - Season of Flame(US).zip
+IRQ32=000001C4
+IRQ32=000023C8
+IRQ32=007F011C
+IRQ32=007F0398
+IRQ32=008001C4
+IRQ32=00800B50
+# LEGACY_TRIM_SOURCE=2394 - 2 Games in 1 - Spyro - Season of Ice + Spyro 2 - Season of Flame(US)
+TRIM=007CFF00
+END

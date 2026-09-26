@@ -5,7 +5,7 @@ if /I "%~1"=="__BUILD_CHILD__" goto BUILD_CHILD
 
 echo.
 echo ============================================================
-echo DS Style Enhanced clean build helper v5
+echo DS Style 7.4c Build
 echo ============================================================
 echo This pause confirms the CMD launched correctly.
 echo Press any key to validate and build.
@@ -13,10 +13,37 @@ echo.
 pause
 
 set "SCRIPT_DIR=%~dp0"
-set "LOG=%SCRIPT_DIR%build-r54-ds-style-enhanced.log"
+set "PROJECT_NAME=DS-Style-7.4c-Source1"
+set "BUILD_DIR=%SCRIPT_DIR%build"
+
+rem Start every normal build with a clean build-output folder.
+if exist "%BUILD_DIR%" rmdir /S /Q "%BUILD_DIR%"
+if exist "%BUILD_DIR%" (
+    echo ERROR: Could not clean the build folder:
+    echo   "%BUILD_DIR%"
+    pause
+    exit /b 1
+)
+mkdir "%BUILD_DIR%"
+if errorlevel 1 (
+    echo ERROR: Could not create the build folder:
+    echo   "%BUILD_DIR%"
+    pause
+    exit /b 1
+)
+
+rem Remove legacy root-level build products from older scripts.
+for %%F in (
+    "%SCRIPT_DIR%%PROJECT_NAME%.elf"
+    "%SCRIPT_DIR%%PROJECT_NAME%.gba"
+    "%SCRIPT_DIR%%PROJECT_NAME%.map"
+    "%SCRIPT_DIR%build-r54-ds-style-7-4c.log"
+) do if exist "%%~F" del /Q "%%~F" >nul 2>&1
+
+set "LOG=%BUILD_DIR%\build-r54-ds-style-7-4c.log"
 
 echo ============================================================ > "%LOG%"
-echo DS Style Enhanced clean build helper v5>> "%LOG%"
+echo DS Style 7.4c Build>> "%LOG%"
 echo Started: %DATE% %TIME%>> "%LOG%"
 echo Script: %~f0>> "%LOG%"
 echo Source: %SCRIPT_DIR%>> "%LOG%"
@@ -78,9 +105,19 @@ echo Source root: %BUILD_CWD%
 for %%F in (
     Makefile
     Build-DS-Style-Enhanced.ps1
-    source\reset_table.h
+    Build-RTS-Assembly-Preflight.ps1
+    Grit\Build-All-Image-Files.ps1
+    Grit\Build-Root-Image-Files.ps1
+    Grit\Verify-Image-Headers.ps1
+    Grit\image-build-manifest.json
+    Grit\grit.exe
+    Grit\FreeImage.dll
     source\saveMODE.h
     source\launcher_version.h
+    source\launcher_font_extended.h
+    source\Ezcard_OP.c
+    source\ez_define.h
+    source\draw.c
     source\ezkernelnew.c
     source\showcht.c
     source\showcht.h
@@ -88,6 +125,11 @@ for %%F in (
     source\NORflash_OP.c
     source\gba_rts_patch.s
     source\gba_rts_only.s
+    source\gba_rts3_defs.inc
+    source\gba_rts3_core.inc
+    source\gba_rts3_menu.inc
+    source\rts3_identity.c
+    source\rts3_identity.h
     source\launcher_theme_assets.h
     source\launcher_topbar_patterns.h
 ) do (
@@ -96,6 +138,19 @@ for %%F in (
         exit /b 1
     )
 )
+if not exist "Grit\Build Skin Files.ps1" (
+    echo ERROR: Required file is missing: Grit\Build Skin Files.ps1
+    exit /b 1
+)
+
+echo.
+echo Verifying and regenerating graphics with bundled Grit...
+powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass -File "%BUILD_CWD%\Grit\Build-All-Image-Files.ps1" -Root "%BUILD_CWD%"
+if errorlevel 1 (
+    echo ERROR: Image verification/regeneration failed.
+    exit /b 1
+)
+echo PASS: All image headers reproduced from PNG/BMP sources.
 
 echo.
 echo Validating merged and optimized source...
@@ -106,8 +161,8 @@ if errorlevel 1 (
 )
 
 echo.
-echo Drop-in optimized source validation passed.
-echo No modified Makefile, Grit generator, Python, tools, or tests are required.
+echo DS Style 7.4c source validation passed.
+echo Grit image verification/regeneration completed before source validation.
 
 for %%F in (SD_LIST SET START HELP) do (
     if not exist "images\blank\%%F.h" (
@@ -144,11 +199,11 @@ echo DEVKITPRO=%DEVKITPRO%
 echo DEVKITARM=%DEVKITARM%
 echo LIBGBA=%LIBGBA%
 
-for %%I in ("%BUILD_CWD%") do set "PROJECT_NAME=%%~nxI"
+set "PROJECT_NAME=DS-Style-7.4c-Source1"
 set "BUILD_DRIVE="
-set "BUILD_OUTPUT_GBA=%PROJECT_NAME%.gba"
-set "BUILD_OUTPUT_ELF=%PROJECT_NAME%.elf"
-set "BUILD_OUTPUT_MAP=%PROJECT_NAME%.map"
+set "BUILD_OUTPUT_GBA=build\%PROJECT_NAME%.gba"
+set "BUILD_OUTPUT_ELF=build\%PROJECT_NAME%.elf"
+set "BUILD_OUTPUT_MAP=build\%PROJECT_NAME%.map"
 
 set "BUILD_CWD_NO_SPACES=!BUILD_CWD: =!"
 if not "!BUILD_CWD_NO_SPACES!"=="!BUILD_CWD!" (
@@ -164,9 +219,6 @@ if not "!BUILD_CWD_NO_SPACES!"=="!BUILD_CWD!" (
         echo ERROR: Could not map !BUILD_DRIVE! to the source folder.
         exit /b 1
     )
-    set "BUILD_OUTPUT_GBA=!BUILD_DRIVE:~0,1!.gba"
-    set "BUILD_OUTPUT_ELF=!BUILD_DRIVE:~0,1!.elf"
-    set "BUILD_OUTPUT_MAP=!BUILD_DRIVE:~0,1!.map"
     pushd !BUILD_DRIVE!\
 ) else (
     pushd "%BUILD_CWD%"
@@ -189,6 +241,17 @@ if errorlevel 1 (
     if defined BUILD_DRIVE subst !BUILD_DRIVE! /D >nul
     echo ERROR: arm-none-eabi-gcc could not be executed.
     exit /b 1
+)
+
+echo.
+echo Checking all ARM assembly with the selected devkitARM compiler...
+powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass -File "%BUILD_CWD%\Build-RTS-Assembly-Preflight.ps1" -Root "." -ArmGcc "%DEVKITARM_WIN%\bin\arm-none-eabi-gcc.exe"
+if errorlevel 1 (
+    set "PREFLIGHT_EXIT=!ERRORLEVEL!"
+    popd
+    if defined BUILD_DRIVE subst !BUILD_DRIVE! /D >nul
+    echo ERROR: ARM assembly preflight failed. The full kernel build was not started.
+    exit /b !PREFLIGHT_EXIT!
 )
 
 echo.
@@ -215,19 +278,10 @@ if not "!MAKE_EXIT!"=="0" (
 
 set "BUILT_GBA=%BUILD_CWD%\!BUILD_OUTPUT_GBA!"
 set "BUILT_ELF=%BUILD_CWD%\!BUILD_OUTPUT_ELF!"
-set "BUILT_MAP=%BUILD_CWD%\build\!BUILD_OUTPUT_MAP!"
+set "BUILT_MAP=%BUILD_CWD%\!BUILD_OUTPUT_MAP!"
 if not exist "!BUILT_GBA!" (
     echo ERROR: make completed but !BUILD_OUTPUT_GBA! was not created.
     exit /b 1
-)
-
-if /I not "!BUILD_OUTPUT_GBA!"=="%PROJECT_NAME%.gba" (
-    copy /Y "!BUILT_GBA!" "%BUILD_CWD%\%PROJECT_NAME%.gba" >nul
-    if errorlevel 1 (
-        echo ERROR: Could not create the project-named GBA output.
-        exit /b 1
-    )
-    set "BUILT_GBA=%BUILD_CWD%\%PROJECT_NAME%.gba"
 )
 
 if exist "!BUILT_ELF!" (
@@ -270,13 +324,13 @@ if errorlevel 1 (
     echo ERROR: Could not create ezkernelnew.bin.
     exit /b 1
 )
-if exist "!BUILT_MAP!" copy /Y "!BUILT_MAP!" "%BUILD_CWD%\%PROJECT_NAME%.map" >nul
-
 echo.
 echo BUILD COMPLETE:
 echo   GBA: !BUILT_GBA!
+echo   ELF: !BUILT_ELF!
 echo   BIN: %BUILD_CWD%\ezkernelnew.bin
-if exist "%BUILD_CWD%\%PROJECT_NAME%.map" echo   MAP: %BUILD_CWD%\%PROJECT_NAME%.map
+if exist "!BUILT_MAP!" echo   MAP: !BUILT_MAP!
+echo   LOG: %BUILD_CWD%\build\build-r54-ds-style-7-4c.log
 
 echo.
 echo SHA-256:

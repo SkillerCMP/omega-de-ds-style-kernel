@@ -1,14 +1,14 @@
 
-//{{BLOCK(MANUAL_EN)
+//{{BLOCK(gImage_English_manual)
 
 //======================================================================
 //
-//	MANUAL_EN, 70x70@16,
+//	gImage_English_manual, 70x70@16, 
 //	+ bitmap not compressed
 //	Total size: 9800 = 9800
 //
-//	Time-stamp: 2026-04-02, 09:52:52
-//	Exported by Cearn's GBA Image Transmogrifier, v0.8.3
+//	Time-stamp: 2026-09-26, 00:57:35
+//	Exported by Cearn's GBA Image Transmogrifier, v0.8.6
 //	( http://www.coranac.com/projects/#grit )
 //
 //======================================================================
@@ -706,4 +706,4 @@ const unsigned char gImage_English_manual[9800] __attribute__((aligned(4)))=
 	0xFF,0x7F,0xFF,0x7F,0xFF,0x7F,0xFF,0x7F,
 };
 
-//}}BLOCK(MANUAL_EN)
+//}}BLOCK(gImage_English_manual)

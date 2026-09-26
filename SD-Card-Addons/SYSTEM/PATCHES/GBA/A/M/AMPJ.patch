@@ -1,0 +1,17 @@
+# DS Style GBA Auto Patch
+# Plain-text external game compatibility profile.
+# IRQ32 uses ROM BYTE offsets and is validated against 03007FFC/03FFFFFC.
+# ADD32 feeds the existing deferred Add2()/iPatchInfo2 pipeline.
+# PATCH16/PATCH32 are direct ROM writes; TRIM overrides patch placement.
+# SEARCH32PAIR is a bounded legacy search/write operation.
+FORMAT=2
+GAME=AMPJ
+
+VARIANT=1
+# SOURCE=0063 - Mahjong Keiji(JP).zip
+IRQ32=0000021C
+IRQ32=0004E760
+IRQ32=0013F118
+IRQ32=0013F20C
+IRQ32=001510B8
+END

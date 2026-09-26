@@ -1,0 +1,19 @@
+# DS Style GBA Auto Patch
+# Plain-text external game compatibility profile.
+# IRQ32 uses ROM BYTE offsets and is validated against 03007FFC/03FFFFFC.
+# ADD32 feeds the existing deferred Add2()/iPatchInfo2 pipeline.
+# PATCH16/PATCH32 are direct ROM writes; TRIM overrides patch placement.
+# SEARCH32PAIR is a bounded legacy search/write operation.
+FORMAT=2
+GAME=B2QP
+
+VARIANT=1
+# SOURCE=2388 - 2 Games in 1 - Prince of Persia - The Sands of Time + Tomb Raider - The Prophecy(EU).zip
+IRQ32=00000100
+IRQ32=00000160
+IRQ32=007B02FC
+IRQ32=007B0DBC
+IRQ32=008000FC
+IRQ32=00891684
+IRQ32=008917C0
+END

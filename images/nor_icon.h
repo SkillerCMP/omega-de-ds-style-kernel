@@ -1,14 +1,14 @@
 
-//{{BLOCK(nor_icon)
+//{{BLOCK(gImage_icon_nor)
 
 //======================================================================
 //
-//	nor_icon, 16x14@16,
+//	gImage_icon_nor, 16x14@16, 
 //	+ bitmap not compressed
 //	Total size: 448 = 448
 //
-//	Time-stamp: 2018-07-18, 09:01:24
-//	Exported by Cearn's GBA Image Transmogrifier, v0.8.3
+//	Time-stamp: 2026-09-26, 00:57:37
+//	Exported by Cearn's GBA Image Transmogrifier, v0.8.6
 //	( http://www.coranac.com/projects/#grit )
 //
 //======================================================================
@@ -48,4 +48,4 @@ const unsigned char gImage_icon_nor[448] __attribute__((aligned(4)))=
 	0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
 };
 
-//}}BLOCK(nor_icon)
+//}}BLOCK(gImage_icon_nor)

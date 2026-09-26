@@ -1,0 +1,17 @@
+# DS Style GBA Auto Patch
+# Plain-text external game compatibility profile.
+# IRQ32 uses ROM BYTE offsets and is validated against 03007FFC/03FFFFFC.
+# ADD32 feeds the existing deferred Add2()/iPatchInfo2 pipeline.
+# PATCH16/PATCH32 are direct ROM writes; TRIM overrides patch placement.
+# SEARCH32PAIR is a bounded legacy search/write operation.
+FORMAT=2
+GAME=BMXC
+
+VARIANT=1
+# SOURCE=2044 - Miteluote Lingdian Renwu(CN).zip
+IRQ32=000000FC
+IRQ32=00001214
+IRQ32=005B87C4
+IRQ32=00795210
+IRQ32=00795770
+END

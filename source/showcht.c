@@ -13,10 +13,14 @@
 
 FM_CHT_LINE tmpCHTFS ;
 
+#define CHT_LINE_BUFFER_OFFSET 0x0200
 #define CHT_BUFFER_OFFSET 0x2000
 #define MAX_CHEAT_MENU_ENTRIES \
 	((MAX_pReadCache_size - CHT_BUFFER_OFFSET) / sizeof(FM_CHT_LINE))
+typedef char CheatLineBufferFitsSharedCache[
+	(CHT_LINE_BUFFER_OFFSET + MAX_BUF_LEN + 1 <= CHT_BUFFER_OFFSET) ? 1 : -1];
 
+static char *const cheat_line_buf = (char*)(pReadCache + CHT_LINE_BUFFER_OFFSET);
 u8 *pCHTbuffer = (u8*)(pReadCache + CHT_BUFFER_OFFSET); //patchbuffer
 
 
@@ -54,9 +58,9 @@ unsigned long str2hex(char *str);
 
 
 extern FIL gfile;
-/* One shared buffer handles both file-line input and the selected option value.
- * The extra byte preserves the full MAX_VAL_LEN payload plus its terminator. */
-char buf[MAX_BUF_LEN + 1]EWRAM_BSS;
+/* The shared read cache handles both file-line input and the selected option
+ * value. The first 0x200 bytes remain available for Clear() scratch, and the
+ * cheat menu table still begins at CHT_BUFFER_OFFSET. */
 extern void Draw_select_icon(u32 X,u32 Y,u32 mode);
 extern void UIAudio_PlayMove(void);
 extern void UIAudio_PlayAcceptExport(void);
@@ -308,18 +312,18 @@ void Get_KEY_val(FIL* file,char*KEY_section,char*KEY_secval,char getbuff[])
 	char section[MAX_KEY_LEN] = {0};
 
 	f_lseek(&gfile, 0x0);
-	while(f_gets(buf, MAX_KEY_LEN, &gfile) != NULL)
+	while(f_gets(cheat_line_buf, MAX_KEY_LEN, &gfile) != NULL)
 	{
-		Trim(buf);
+		Trim(cheat_line_buf);
     // to skip text comment with flags /* ...*/
-    if (buf[0] != '#' && (buf[0] != '/' || buf[1] != '/'))
+    if (cheat_line_buf[0] != '#' && (cheat_line_buf[0] != '/' || cheat_line_buf[1] != '/'))
     {
-			if (strstr(buf, "/*") != NULL)
+			if (strstr(cheat_line_buf, "/*") != NULL)
 			{
 				text_comment = 1;
 				continue;
 			}
-			else if (strstr(buf, "*/") != NULL)
+			else if (strstr(cheat_line_buf, "*/") != NULL)
 			{
 				text_comment = 0;
 				continue;
@@ -330,10 +334,10 @@ void Get_KEY_val(FIL* file,char*KEY_section,char*KEY_secval,char getbuff[])
 			continue;
     }
 
-		int buf_len = strlen(buf);
+		int buf_len = strlen(cheat_line_buf);
           
 	    // ignore and skip the line with first chracter '#', '=' or '/'
-    if (buf_len <= 1 || buf[0] == '#' || buf[0] == '=' || buf[0] == '/')
+    if (buf_len <= 1 || cheat_line_buf[0] == '#' || cheat_line_buf[0] == '=' || cheat_line_buf[0] == '/')
     {
         continue;
     }
@@ -351,7 +355,7 @@ void Get_KEY_val(FIL* file,char*KEY_section,char*KEY_secval,char getbuff[])
     for (i=0; i<buf_len; ++i)
     {
 
-			if (buf[i] == '[')
+			if (cheat_line_buf[i] == '[')
 			{
 				is_section = 1;
 				in_section = 0;
@@ -360,13 +364,13 @@ void Get_KEY_val(FIL* file,char*KEY_section,char*KEY_secval,char getbuff[])
 				continue;
 			}
 
-			if(is_section == 1 && buf[i] != ']')
+			if(is_section == 1 && cheat_line_buf[i] != ']')
 			{
 				if (section_len < MAX_KEY_LEN - 1)
-					section[section_len++] = buf[i];
+					section[section_len++] = cheat_line_buf[i];
 				continue;
 			}
-      else if (buf[i] == ']')
+      else if (cheat_line_buf[i] == ']')
       {
           is_section = 0;
           in_section = 1;
@@ -381,24 +385,24 @@ void Get_KEY_val(FIL* file,char*KEY_section,char*KEY_secval,char getbuff[])
 			 */
 			{
 				// scan param key name
-        if (_kv == 0 && buf[i] != '=')
+        if (_kv == 0 && cheat_line_buf[i] != '=')
         {
             if (_klen >= MAX_KEY_LEN - 1)
                 break;
-            _paramk[_klen++] = buf[i];
+            _paramk[_klen++] = cheat_line_buf[i];
             continue;
         }
-        else if (_kv == 0 && buf[i] == '=')
+        else if (_kv == 0 && cheat_line_buf[i] == '=')
         {
             _kv = 1;
             continue;
         }
 	      	
 	      // scan param key value
-	      if (_vlen >= MAX_KEY_LEN || buf[i] == '#')
+	      if (_vlen >= MAX_KEY_LEN || cheat_line_buf[i] == '#')
 					break;
 	                
-	      _paramv[_vlen++] = buf[i];
+	      _paramv[_vlen++] = cheat_line_buf[i];
 	    }
 	          
 	  }
@@ -417,7 +421,7 @@ void Get_KEY_val(FIL* file,char*KEY_section,char*KEY_secval,char getbuff[])
 		if (strcmp(_paramk, "")==0 || strcmp(_paramv, "")==0)
 			continue;
 
-		memset(buf,0,MAX_KEY_LEN) ;
+		memset(cheat_line_buf,0,MAX_KEY_LEN) ;
   }
 }
 //------------------------------------------------------------------
@@ -443,11 +447,11 @@ u32 Get_CHT_val(FIL* file,char*KEY_section,char*KEY_secval/*,char getbuff[]*/)
 
 	/* The shared buffer is overwritten while searching and becomes the complete
 	 * selected option value only after the requested key is found. */
-	buf[0] = '\0';
+	cheat_line_buf[0] = '\0';
 	gl_cheat_value_truncated = 0;
 
 	f_lseek(&gfile, 0x0);
-	while(f_gets(buf, MAX_BUF_LEN + 1, &gfile) != NULL)
+	while(f_gets(cheat_line_buf, MAX_BUF_LEN + 1, &gfile) != NULL)
 	{
 		char _paramk[MAX_KEY_LEN] = {0};
 		int _kv = 0;
@@ -461,18 +465,18 @@ u32 Get_CHT_val(FIL* file,char*KEY_section,char*KEY_secval/*,char getbuff[]*/)
 		int buf_len;
 
 		initial_line_complete =
-			(strchr(buf, '\n') != NULL || strchr(buf, '\r') != NULL);
-		Trim(buf);
+			(strchr(cheat_line_buf, '\n') != NULL || strchr(cheat_line_buf, '\r') != NULL);
+		Trim(cheat_line_buf);
 
 		/* Skip text comments delimited by C-style markers. */
-		if (buf[0] != '#' && (buf[0] != '/' || buf[1] != '/'))
+		if (cheat_line_buf[0] != '#' && (cheat_line_buf[0] != '/' || cheat_line_buf[1] != '/'))
 		{
-			if (strstr(buf, "/*") != NULL)
+			if (strstr(cheat_line_buf, "/*") != NULL)
 			{
 				text_comment = 1;
 				continue;
 			}
-			else if (strstr(buf, "*/") != NULL)
+			else if (strstr(cheat_line_buf, "*/") != NULL)
 			{
 				text_comment = 0;
 				continue;
@@ -481,13 +485,13 @@ u32 Get_CHT_val(FIL* file,char*KEY_section,char*KEY_secval/*,char getbuff[]*/)
 		if (text_comment == 1)
 			continue;
 
-		buf_len = strlen(buf);
-		if (buf_len <= 1 || buf[0] == '#' || buf[0] == '=' || buf[0] == '/')
+		buf_len = strlen(cheat_line_buf);
+		if (buf_len <= 1 || cheat_line_buf[0] == '#' || cheat_line_buf[0] == '=' || cheat_line_buf[0] == '/')
 			continue;
 
 		for (i = 0; i < buf_len; ++i)
 		{
-			if (buf[i] == '[')
+			if (cheat_line_buf[i] == '[')
 			{
 				is_section = 1;
 				in_section = 0;
@@ -495,13 +499,13 @@ u32 Get_CHT_val(FIL* file,char*KEY_section,char*KEY_secval/*,char getbuff[]*/)
 				continue;
 			}
 
-			if (is_section == 1 && buf[i] != ']')
+			if (is_section == 1 && cheat_line_buf[i] != ']')
 			{
 				if (section_len < MAX_KEY_LEN - 1)
-					section[section_len++] = buf[i];
+					section[section_len++] = cheat_line_buf[i];
 				continue;
 			}
-			else if (buf[i] == ']')
+			else if (cheat_line_buf[i] == ']')
 			{
 				is_section = 0;
 				in_section = 1;
@@ -510,29 +514,29 @@ u32 Get_CHT_val(FIL* file,char*KEY_section,char*KEY_secval/*,char getbuff[]*/)
 			}
 
 			/* Parse both grouped rows and standalone root rows. */
-			if (_kv == 0 && buf[i] != '=')
+			if (_kv == 0 && cheat_line_buf[i] != '=')
 			{
 				if (_klen >= MAX_KEY_LEN - 1)
 					break;
-				_paramk[_klen++] = buf[i];
+				_paramk[_klen++] = cheat_line_buf[i];
 				continue;
 			}
-			else if (_kv == 0 && buf[i] == '=')
+			else if (_kv == 0 && cheat_line_buf[i] == '=')
 			{
 				_kv = 1;
 				value_offset = i + 1;
 				continue;
 			}
 
-			if (_kv == 1 && buf[i] == '#')
+			if (_kv == 1 && cheat_line_buf[i] == '#')
 			{
-				buf[i] = '\0';
+				cheat_line_buf[i] = '\0';
 				break;
 			}
 		}
 
 		if (value_offset >= 0)
-			value_len = strlen(&buf[value_offset]);
+			value_len = strlen(&cheat_line_buf[value_offset]);
 
 		if (((KEY_section[0] == '\0') && !in_section) ||
 			((KEY_section[0] != '\0') && in_section &&
@@ -544,8 +548,8 @@ u32 Get_CHT_val(FIL* file,char*KEY_section,char*KEY_secval/*,char getbuff[]*/)
 				u32 line_complete = initial_line_complete;
 
 				/* Reuse the input buffer as the complete selected option value. */
-				memmove(buf, &buf[value_offset], value_length);
-				buf[value_length] = '\0';
+				memmove(cheat_line_buf, &cheat_line_buf[value_offset], value_length);
+				cheat_line_buf[value_length] = '\0';
 
 				/* Stock files may continue an option on following lines. These are
 				 * appended directly into the unused tail of the same buffer. */
@@ -585,7 +589,7 @@ u32 Get_CHT_val(FIL* file,char*KEY_section,char*KEY_secval/*,char getbuff[]*/)
 					}
 
 					remaining = (MAX_VAL_LEN + 1) - value_length;
-					line = &buf[value_length];
+					line = &cheat_line_buf[value_length];
 					if (f_gets(line, remaining, &gfile) == NULL)
 						break;
 
@@ -596,20 +600,20 @@ u32 Get_CHT_val(FIL* file,char*KEY_section,char*KEY_secval/*,char getbuff[]*/)
 					/* Stop at a blank/comment line, a new section, or another key. */
 					if (!IsCheatValueContinuationLine(line))
 					{
-						buf[value_length] = '\0';
+						cheat_line_buf[value_length] = '\0';
 						break;
 					}
 					next_len = strlen(line);
 
 					if (value_length + (u32)next_len > MAX_VAL_LEN)
 					{
-						buf[value_length] = '\0';
+						cheat_line_buf[value_length] = '\0';
 						gl_cheat_value_truncated = 1;
 						break;
 					}
 
 					value_length += (u32)next_len;
-					buf[value_length] = '\0';
+					cheat_line_buf[value_length] = '\0';
 					line_complete = next_line_complete;
 				}
 
@@ -884,7 +888,7 @@ static void Show_KEY_line(u32 line, u32 Select, u32 showoffset, u32 total_entrie
 
 	if(entry->is_section == 1)
 	{
-		sprintf(msg,"[%c] %s", select == CHT_GROUP_EXPANDED ? '-' : '+',
+		snprintf(msg, sizeof(msg),"[%c] %s", select == CHT_GROUP_EXPANDED ? '-' : '+',
 			entry->LINEname);
 		if(line == Select)
 		{
@@ -899,9 +903,9 @@ static void Show_KEY_line(u32 line, u32 Select, u32 showoffset, u32 total_entrie
 	else
 	{
 		Draw_select_icon(X_offset+13,row_y,select);
-		sprintf(msg,"%s",entry->LINEname);
+		snprintf(msg, sizeof(msg),"%s",entry->LINEname);
 		if(!strcasecmp(msg, "ON"))
-			sprintf(msg, "%s", Launcher_OnOffText(select));
+			snprintf(msg, sizeof(msg), "%s", Launcher_OnOffText(select));
 		if(line == Select)
 		{
 			msg_len = CheatTextVisibleColumns(msg);
@@ -2243,7 +2247,7 @@ static u32 Analyze_KEYVAL(FIL* file,u32 total)
 			buflen = Get_CHT_val(&gfile, (char*)section_name,
 				(char*)option_name);
 			if (buflen != 0 && !gl_cheat_value_truncated &&
-				ParseEnhancedOptionValue(buf, buflen))
+				ParseEnhancedOptionValue(cheat_line_buf, buflen))
 				gl_cheat_selected_count++;
 			else
 			{
@@ -2303,7 +2307,7 @@ u32 Change2cht_folder(u32 chtname)
 	memset(currentpath,00,256);
 
 	memset(chtnamebuf,0x00,100);
-	sprintf(chtnamebuf,"%d%d%d%d",HexToChar(((u8*)&chtname)[0]),HexToChar(((u8*)&chtname)[1]),HexToChar(((u8*)&chtname)[2]),HexToChar(  ((u8*)&chtname)[3] )  );
+	snprintf(chtnamebuf, sizeof(chtnamebuf),"%d%d%d%d",HexToChar(((u8*)&chtname)[0]),HexToChar(((u8*)&chtname)[1]),HexToChar(((u8*)&chtname)[2]),HexToChar(  ((u8*)&chtname)[3] )  );
 	u32 num=atoi(chtnamebuf);
 	//DEBUG_printf("num =%d", num);
 	if(num < 200){
@@ -2355,10 +2359,10 @@ u32 Change2cht_folder(u32 chtname)
 
 	if(!cheat_use_chinese_folder)
 	{
-		sprintf(currentpath,"/SYSTEM/CHEAT/Eng/%s",folder_name);
+		snprintf(currentpath, sizeof(currentpath),"/SYSTEM/CHEAT/Eng/%s",folder_name);
 	}
 	else{
-		sprintf(currentpath,"/SYSTEM/CHEAT/Chn/%s",folder_name);
+		snprintf(currentpath, sizeof(currentpath),"/SYSTEM/CHEAT/Chn/%s",folder_name);
 	}
 	res=f_chdir(currentpath);
 	return res;
@@ -2430,7 +2434,7 @@ u32 Check_cheat_file(TCHAR *gamefilename)
 					}
 					if(res!=0)return 0;
 					memset(chtnamebuf,0x00,100);
-					sprintf(chtnamebuf,"%d%d%d%d.cht",HexToChar(((u8*)&chtname)[0]),HexToChar(((u8*)&chtname)[1]),HexToChar(((u8*)&chtname)[2]),HexToChar(  ((u8*)&chtname)[3] )  );
+					snprintf(chtnamebuf, sizeof(chtnamebuf),"%d%d%d%d.cht",HexToChar(((u8*)&chtname)[0]),HexToChar(((u8*)&chtname)[1]),HexToChar(((u8*)&chtname)[2]),HexToChar(  ((u8*)&chtname)[3] )  );
 					res = f_open(&gfile,chtnamebuf, FA_OPEN_EXISTING);
 
 					if(res == FR_OK)//have a cht file
@@ -2482,7 +2486,7 @@ static void ShowCheatCompileWarning(u32 error_count)
 	u16 pressed;
 
 	Launcher_ClearCheatRegion(0, 19, 240, 160 - 19);
-	sprintf(msg, "%lu cheat%s skipped", error_count,
+	snprintf(msg, sizeof(msg), "%lu cheat%s skipped", error_count,
 		error_count == 1 ? "" : "s");
 	DrawCheatText12(msg, 30, 44, 58, gl_color_text, 1);
 	strcpy(msg, "Invalid format or limit reached");
@@ -2528,7 +2532,7 @@ void Open_cht_file(TCHAR *gamefilename,u32 havecht)
 		Change2cht_folder(havecht);
 		u8* chtmode;
 		chtmode = (u8*)&havecht;
-		sprintf(chtnamebuf,"%d%d%d%d.cht",HexToChar(chtmode[0]),HexToChar(chtmode[1]),HexToChar(chtmode[2]),HexToChar(chtmode[3]));
+		snprintf(chtnamebuf, sizeof(chtnamebuf),"%d%d%d%d.cht",HexToChar(chtmode[0]),HexToChar(chtmode[1]),HexToChar(chtmode[2]),HexToChar(chtmode[3]));
 	}
 	res = f_open(&gfile,chtnamebuf, FA_READ);
 
@@ -2541,7 +2545,7 @@ void Open_cht_file(TCHAR *gamefilename,u32 havecht)
 		strncpy(buffer, gamefilename, sizeof(buffer) - 1);
 		buffer[sizeof(buffer) - 1] = '\0';
 		Clean_cheat_title(buffer);
-		sprintf(msg,"%s",buffer);
+		snprintf(msg, sizeof(msg),"%s",buffer);
 
 		Launcher_DrawCheatBackground(msg);
 

@@ -1,0 +1,31 @@
+# DS Style GBA Auto Patch
+# Plain-text external game compatibility profile.
+# IRQ32 uses ROM BYTE offsets and is validated against 03007FFC/03FFFFFC.
+# ADD32 feeds the existing deferred Add2()/iPatchInfo2 pipeline.
+# PATCH16/PATCH32 are direct ROM writes; TRIM overrides patch placement.
+# SEARCH32PAIR is a bounded legacy search/write operation.
+FORMAT=2
+GAME=AE7X
+
+VARIANT=1
+# SOURCE=1574 - Fire Emblem(EU).zip
+IRQ32=0000021C
+IRQ32=00000BB8
+END
+
+# ============================================================
+# STATUS=DISABLED_LEGACY
+# DO_NOT_ENABLE_WITHOUT_HARDWARE_TESTING
+# Legacy Check_Fire_Emblem() research preserved as comments only.
+# TITLE=1574 - Fire Emblem (EU)
+# PATCH_BLOB=Fire_Emblem_A
+# PATCH_ADDRESS=00FFF900
+# HOOK_REPLACEMENT_WORD0=47004800
+# FIRE_EMBLEM_HOOK32=000A09C8,47004800,08FFF901
+# FIRE_EMBLEM_HOOK32=000A0A20,47004800,08FFF90F
+# FIRE_EMBLEM_HOOK32=000A0B60,47004800,08FFF91D
+# FIRE_EMBLEM_HOOK32=000A0C4C,47004800,08FFF91D
+# FIRE_EMBLEM_HOOK32=000A1560,47004800,08FFF92D
+# PATCH_BLOB_MODIFY_VALUE=080B3A57
+# AUTO_SAVE_LEGACY_BEHAVIOR=DISABLE_WHEN_PATCH_ACTIVE
+# ============================================================

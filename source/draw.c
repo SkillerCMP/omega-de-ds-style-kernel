@@ -11,6 +11,7 @@
 #include "ezkernel.h"
 #include "draw.h"
 #include "lang.h"
+#include "launcher_font_extended.h"
 
 int current_y = 1;
 extern u8 pReadCache [MAX_pReadCache_size]EWRAM_BSS;
@@ -83,30 +84,6 @@ void IWRAM_CODE DrawPic(u16 *GFX, u16 x, u16 y, u16 w, u16 h, u8 isTrans, u16 tc
 	}
 }
 //---------------------------------------------------------------------------------
-enum
-{
-	TEXT_ACCENT_NONE,
-	TEXT_ACCENT_ACUTE,
-	TEXT_ACCENT_GRAVE,
-	TEXT_ACCENT_CIRC,
-	TEXT_ACCENT_TILDE,
-	TEXT_ACCENT_DIAERESIS,
-	TEXT_ACCENT_RING,
-	TEXT_ACCENT_BREVE,
-	TEXT_ACCENT_CEDILLA,
-	TEXT_ACCENT_DOT
-};
-
-#define TEXT_SPECIAL_NONE 0
-#define TEXT_SPECIAL_DOTLESS_I 1
-#define TEXT_SPECIAL_SHARP_S 2
-
-static void DrawTextPixel12(u16 *v, u16 x, u16 y, u16 c, int px, int py)
-{
-	if((x + px) < 240 && (y + py) < 160)
-		v[(y + py) * 240 + x + px] = c;
-}
-
 static void DrawAsciiGlyph12(u16 *v, u16 x, u16 y, u16 c, u8 ch)
 {
 	u8 cc;
@@ -183,65 +160,7 @@ static void DrawThaiRows12(u16 *v, u16 x, u16 y, u16 c, const u8 *rows)
 	}
 }
 
-static void DrawLatinAccent12(u16 *v, u16 x, u16 y, u16 c, u8 accent, u8 base)
-{
-	u8 y_offset = ((accent == TEXT_ACCENT_DIAERESIS) &&
-	               ((base == 'a') || (base == 'e') || (base == 'i') || (base == 'o') || (base == 'u') || (base == 'y'))) ? 2 : 0;
-	if((accent == TEXT_ACCENT_BREVE) && (base == 'g'))
-		y_offset = 1;
-
-	switch(accent)
-	{
-		case TEXT_ACCENT_ACUTE:
-			DrawTextPixel12(v, x, y, c, 4, 0 + y_offset);
-			DrawTextPixel12(v, x, y, c, 3, 1 + y_offset);
-			break;
-		case TEXT_ACCENT_GRAVE:
-			DrawTextPixel12(v, x, y, c, 2, 0 + y_offset);
-			DrawTextPixel12(v, x, y, c, 3, 1 + y_offset);
-			break;
-		case TEXT_ACCENT_CIRC:
-			DrawTextPixel12(v, x, y, c, 3, 0 + y_offset);
-			DrawTextPixel12(v, x, y, c, 2, 1 + y_offset);
-			DrawTextPixel12(v, x, y, c, 4, 1 + y_offset);
-			break;
-		case TEXT_ACCENT_TILDE:
-			DrawTextPixel12(v, x, y, c, 2, 0 + y_offset);
-			DrawTextPixel12(v, x, y, c, 4, 0 + y_offset);
-			DrawTextPixel12(v, x, y, c, 1, 1 + y_offset);
-			DrawTextPixel12(v, x, y, c, 3, 1 + y_offset);
-			break;
-		case TEXT_ACCENT_DIAERESIS:
-			DrawTextPixel12(v, x, y, c, 2, 0 + y_offset);
-			DrawTextPixel12(v, x, y, c, 4, 0 + y_offset);
-			break;
-		case TEXT_ACCENT_RING:
-			DrawTextPixel12(v, x, y, c, 3, 0 + y_offset);
-			DrawTextPixel12(v, x, y, c, 2, 1 + y_offset);
-			DrawTextPixel12(v, x, y, c, 4, 1 + y_offset);
-			DrawTextPixel12(v, x, y, c, 3, 2 + y_offset);
-			break;
-		case TEXT_ACCENT_BREVE:
-			DrawTextPixel12(v, x, y, c, 1, 0 + y_offset);
-			DrawTextPixel12(v, x, y, c, 5, 0 + y_offset);
-			DrawTextPixel12(v, x, y, c, 2, 1 + y_offset);
-			DrawTextPixel12(v, x, y, c, 3, 1 + y_offset);
-			DrawTextPixel12(v, x, y, c, 4, 1 + y_offset);
-			break;
-		case TEXT_ACCENT_CEDILLA:
-			DrawTextPixel12(v, x, y, c, 3, 10);
-			DrawTextPixel12(v, x, y, c, 2, 11);
-			DrawTextPixel12(v, x, y, c, 3, 11);
-			break;
-		case TEXT_ACCENT_DOT:
-			DrawTextPixel12(v, x, y, c, 3, 0);
-			break;
-		default:
-			break;
-	}
-}
-
-static u32 DecodeUtf8Text12(char *str, u32 l, u32 *hi, u8 c1, u32 *codepoint)
+static u32 DecodeUtf8Text12(const char *str, u32 l, u32 *hi, u8 c1, u32 *codepoint)
 {
 	u8 c2;
 	u8 c3;
@@ -271,7 +190,7 @@ static u32 DecodeUtf8Text12(char *str, u32 l, u32 *hi, u8 c1, u32 *codepoint)
 	return 0;
 }
 
-static u32 DecodeCp936LatinText12(char *str, u32 l, u32 *hi, u8 c1, u32 *codepoint)
+static u32 DecodeCp936LatinText12(const char *str, u32 l, u32 *hi, u8 c1, u32 *codepoint)
 {
 	u8 c2;
 
@@ -305,7 +224,7 @@ static u32 ThaiIsLeadingVowel(u32 codepoint)
 	return (codepoint >= 0x0E40u) && (codepoint <= 0x0E44u);
 }
 
-static u32 ThaiReadCodepointAt(char *str, u32 l, u32 *hi, u32 *codepoint)
+static u32 ThaiReadCodepointAt(const char *str, u32 l, u32 *hi, u32 *codepoint)
 {
 	u8 c1;
 
@@ -318,7 +237,7 @@ static u32 ThaiReadCodepointAt(char *str, u32 l, u32 *hi, u32 *codepoint)
 	return DecodeUtf8Text12(str, l, hi, c1, codepoint);
 }
 
-static void ThaiConsumeMarks(char *str, u32 l, u32 *hi)
+static void ThaiConsumeMarks(const char *str, u32 l, u32 *hi)
 {
 	while(*hi < l)
 	{
@@ -333,7 +252,7 @@ static void ThaiConsumeMarks(char *str, u32 l, u32 *hi)
 	}
 }
 
-static u32 ThaiConsumeVisibleCluster(char *str, u32 l, u32 *hi, u32 codepoint)
+static u32 ThaiConsumeVisibleCluster(const char *str, u32 l, u32 *hi, u32 codepoint)
 {
 	if(ThaiIsLeadingVowel(codepoint))
 	{
@@ -358,96 +277,77 @@ static u32 ThaiConsumeVisibleCluster(char *str, u32 l, u32 *hi, u32 codepoint)
 	return 0;
 }
 
-static u32 MapLatinGlyph12(u32 cp, u8 *base, u8 *accent, u8 *special)
+static int MapLatinGlyph12(u32 cp)
 {
-	*accent = TEXT_ACCENT_NONE;
-	*special = TEXT_SPECIAL_NONE;
-
 	switch(cp)
 	{
-		case 0x00C0: *base = 'A'; *accent = TEXT_ACCENT_GRAVE; return 1;
-		case 0x00C1: *base = 'A'; *accent = TEXT_ACCENT_ACUTE; return 1;
-		case 0x00C2: *base = 'A'; *accent = TEXT_ACCENT_CIRC; return 1;
-		case 0x00C3: *base = 'A'; *accent = TEXT_ACCENT_TILDE; return 1;
-		case 0x00C4: *base = 'A'; *accent = TEXT_ACCENT_DIAERESIS; return 1;
-		case 0x00C5: *base = 'A'; *accent = TEXT_ACCENT_RING; return 1;
-		case 0x00E0: *base = 'a'; *accent = TEXT_ACCENT_GRAVE; return 1;
-		case 0x00E1: *base = 'a'; *accent = TEXT_ACCENT_ACUTE; return 1;
-		case 0x00E2: *base = 'a'; *accent = TEXT_ACCENT_CIRC; return 1;
-		case 0x00E3: *base = 'a'; *accent = TEXT_ACCENT_TILDE; return 1;
-		case 0x00E4: *base = 'a'; *accent = TEXT_ACCENT_DIAERESIS; return 1;
-		case 0x00E5: *base = 'a'; *accent = TEXT_ACCENT_RING; return 1;
-		case 0x00C7: *base = 'C'; *accent = TEXT_ACCENT_CEDILLA; return 1;
-		case 0x00E7: *base = 'c'; *accent = TEXT_ACCENT_CEDILLA; return 1;
-		case 0x00C8: *base = 'E'; *accent = TEXT_ACCENT_GRAVE; return 1;
-		case 0x00C9: *base = 'E'; *accent = TEXT_ACCENT_ACUTE; return 1;
-		case 0x00CA: *base = 'E'; *accent = TEXT_ACCENT_CIRC; return 1;
-		case 0x00CB: *base = 'E'; *accent = TEXT_ACCENT_DIAERESIS; return 1;
-		case 0x00E8: *base = 'e'; *accent = TEXT_ACCENT_GRAVE; return 1;
-		case 0x00E9: *base = 'e'; *accent = TEXT_ACCENT_ACUTE; return 1;
-		case 0x00EA: *base = 'e'; *accent = TEXT_ACCENT_CIRC; return 1;
-		case 0x00EB: *base = 'e'; *accent = TEXT_ACCENT_DIAERESIS; return 1;
-		case 0x00CC: *base = 'I'; *accent = TEXT_ACCENT_GRAVE; return 1;
-		case 0x00CD: *base = 'I'; *accent = TEXT_ACCENT_ACUTE; return 1;
-		case 0x00CE: *base = 'I'; *accent = TEXT_ACCENT_CIRC; return 1;
-		case 0x00CF: *base = 'I'; *accent = TEXT_ACCENT_DIAERESIS; return 1;
-		case 0x00EC: *base = 'i'; *accent = TEXT_ACCENT_GRAVE; return 1;
-		case 0x00ED: *base = 'i'; *accent = TEXT_ACCENT_ACUTE; return 1;
-		case 0x00EE: *base = 'i'; *accent = TEXT_ACCENT_CIRC; return 1;
-		case 0x00EF: *base = 'i'; *accent = TEXT_ACCENT_DIAERESIS; return 1;
-		case 0x00D1: *base = 'N'; *accent = TEXT_ACCENT_TILDE; return 1;
-		case 0x00F1: *base = 'n'; *accent = TEXT_ACCENT_TILDE; return 1;
-		case 0x00D2: *base = 'O'; *accent = TEXT_ACCENT_GRAVE; return 1;
-		case 0x00D3: *base = 'O'; *accent = TEXT_ACCENT_ACUTE; return 1;
-		case 0x00D4: *base = 'O'; *accent = TEXT_ACCENT_CIRC; return 1;
-		case 0x00D5: *base = 'O'; *accent = TEXT_ACCENT_TILDE; return 1;
-		case 0x00D6: *base = 'O'; *accent = TEXT_ACCENT_DIAERESIS; return 1;
-		case 0x00F2: *base = 'o'; *accent = TEXT_ACCENT_GRAVE; return 1;
-		case 0x00F3: *base = 'o'; *accent = TEXT_ACCENT_ACUTE; return 1;
-		case 0x00F4: *base = 'o'; *accent = TEXT_ACCENT_CIRC; return 1;
-		case 0x00F5: *base = 'o'; *accent = TEXT_ACCENT_TILDE; return 1;
-		case 0x00F6: *base = 'o'; *accent = TEXT_ACCENT_DIAERESIS; return 1;
-		case 0x00D9: *base = 'U'; *accent = TEXT_ACCENT_GRAVE; return 1;
-		case 0x00DA: *base = 'U'; *accent = TEXT_ACCENT_ACUTE; return 1;
-		case 0x00DB: *base = 'U'; *accent = TEXT_ACCENT_CIRC; return 1;
-		case 0x00DC: *base = 'U'; *accent = TEXT_ACCENT_DIAERESIS; return 1;
-		case 0x00F9: *base = 'u'; *accent = TEXT_ACCENT_GRAVE; return 1;
-		case 0x00FA: *base = 'u'; *accent = TEXT_ACCENT_ACUTE; return 1;
-		case 0x00FB: *base = 'u'; *accent = TEXT_ACCENT_CIRC; return 1;
-		case 0x00FC: *base = 'u'; *accent = TEXT_ACCENT_DIAERESIS; return 1;
-		case 0x00DD: *base = 'Y'; *accent = TEXT_ACCENT_ACUTE; return 1;
-		case 0x00FD: *base = 'y'; *accent = TEXT_ACCENT_ACUTE; return 1;
-		case 0x00FF: *base = 'y'; *accent = TEXT_ACCENT_DIAERESIS; return 1;
-		case 0x011E: *base = 'G'; *accent = TEXT_ACCENT_BREVE; return 1;
-		case 0x011F: *base = 'g'; *accent = TEXT_ACCENT_BREVE; return 1;
-		case 0x0130: *base = 'I'; *accent = TEXT_ACCENT_DOT; return 1;
-		case 0x015E: *base = 'S'; *accent = TEXT_ACCENT_CEDILLA; return 1;
-		case 0x015F: *base = 's'; *accent = TEXT_ACCENT_CEDILLA; return 1;
-		case 0x00DF: *base = 0; *special = TEXT_SPECIAL_SHARP_S; return 1;
-		case 0x0131: *base = 0; *special = TEXT_SPECIAL_DOTLESS_I; return 1;
+		case 0x00C0: return 0;
+		case 0x00C1: return 1;
+		case 0x00C2: return 2;
+		case 0x00C3: return 3;
+		case 0x00C4: return 4;
+		case 0x00C5: return 5;
+		case 0x00C7: return 6;
+		case 0x00C8: return 7;
+		case 0x00C9: return 8;
+		case 0x00CA: return 9;
+		case 0x00CB: return 10;
+		case 0x00CC: return 11;
+		case 0x00CD: return 12;
+		case 0x00CE: return 13;
+		case 0x00CF: return 14;
+		case 0x00D1: return 15;
+		case 0x00D2: return 16;
+		case 0x00D3: return 17;
+		case 0x00D4: return 18;
+		case 0x00D5: return 19;
+		case 0x00D6: return 20;
+		case 0x00D9: return 21;
+		case 0x00DA: return 22;
+		case 0x00DB: return 23;
+		case 0x00DC: return 24;
+		case 0x00DD: return 25;
+		case 0x00DF: return 26;
+		case 0x00E0: return 27;
+		case 0x00E1: return 28;
+		case 0x00E2: return 29;
+		case 0x00E3: return 30;
+		case 0x00E4: return 31;
+		case 0x00E5: return 32;
+		case 0x00E7: return 33;
+		case 0x00E8: return 34;
+		case 0x00E9: return 35;
+		case 0x00EA: return 36;
+		case 0x00EB: return 37;
+		case 0x00EC: return 38;
+		case 0x00ED: return 39;
+		case 0x00EE: return 40;
+		case 0x00EF: return 41;
+		case 0x00F1: return 42;
+		case 0x00F2: return 43;
+		case 0x00F3: return 44;
+		case 0x00F4: return 45;
+		case 0x00F5: return 46;
+		case 0x00F6: return 47;
+		case 0x00F9: return 48;
+		case 0x00FA: return 49;
+		case 0x00FB: return 50;
+		case 0x00FC: return 51;
+		case 0x00FD: return 52;
+		case 0x00FF: return 53;
+		case 0x011E: return 54;
+		case 0x011F: return 55;
+		case 0x0130: return 56;
+		case 0x0131: return 57;
+		case 0x015E: return 58;
+		case 0x015F: return 59;
 		default: break;
 	}
 
-	return 0;
+	return -1;
 }
 
-static void DrawMappedLatinGlyph12(u16 *v, u16 x, u16 y, u16 c, u8 base, u8 accent, u8 special)
-{
-	static const u8 dotless_i[12] = {0x00,0x00,0x00,0x00,0x10,0x10,0x10,0x10,0x10,0x10,0x00,0x00};
-	static const u8 sharp_s[12] = {0x00,0x00,0x70,0x88,0x88,0x90,0xE0,0x90,0x88,0xF0,0x00,0x00};
-
-	if(special == TEXT_SPECIAL_DOTLESS_I)
-		DrawCustomGlyph12(v, x, y, c, dotless_i);
-	else if(special == TEXT_SPECIAL_SHARP_S)
-		DrawCustomGlyph12(v, x, y, c, sharp_s);
-	else
-	{
-		DrawAsciiGlyph12(v, x, y, c, base);
-		DrawLatinAccent12(v, x, y, c, accent, base);
-	}
-}
-
-u16 DrawText12VisibleLength(char *str)
+u16 DrawText12VisibleLength(const char *str)
 {
 	u32 l = strlen(str);
 	u32 hi = 0;
@@ -495,7 +395,7 @@ u16 DrawText12VisibleLength(char *str)
 	return shown;
 }
 
-u16 DrawText12ByteOffsetForGlyphs(char *str, u16 glyphs)
+u16 DrawText12ByteOffsetForGlyphs(const char *str, u16 glyphs)
 {
 	u32 l = strlen(str);
 	u32 hi = 0;
@@ -543,7 +443,7 @@ u16 DrawText12ByteOffsetForGlyphs(char *str, u16 glyphs)
 	return hi;
 }
 
-void DrawText12CopyVisible(char *dst, u16 dst_size, char *src, u16 glyphs)
+void DrawText12CopyVisible(char *dst, u16 dst_size, const char *src, u16 glyphs)
 {
 	u16 offset;
 
@@ -557,7 +457,7 @@ void DrawText12CopyVisible(char *dst, u16 dst_size, char *src, u16 glyphs)
 	dst[offset] = 0;
 }
 
-static void DrawHZText12Surface(char *str, u16 len, u16 x, u16 y, u16 c, u16 *v)
+static void DrawHZText12Surface(const char *str, u16 len, u16 x, u16 y, u16 c, u16 *v)
 {
   u32 i,l,hi=0,shown=0;
   u32 location;
@@ -582,9 +482,7 @@ static void DrawHZText12Surface(char *str, u16 len, u16 x, u16 y, u16 c, u16 *v)
 		else	//Double-byte / multi-byte
 		{
 			u32 codepoint;
-			u8 base;
-			u8 accent;
-			u8 special;
+			int latin_index;
 			u32 hi_save;
 
 			hi_save = hi;
@@ -624,8 +522,9 @@ static void DrawHZText12Surface(char *str, u16 len, u16 x, u16 y, u16 c, u16 *v)
 			   (DecodeUtf8Text12(str, l, &hi, c1, &codepoint) ||
 			    DecodeCp936LatinText12(str, l, &hi, c1, &codepoint)))
 			{
-				if(MapLatinGlyph12(codepoint, &base, &accent, &special))
-					DrawMappedLatinGlyph12(v, x, y, c, base, accent, special);
+				latin_index = MapLatinGlyph12(codepoint);
+				if(latin_index >= 0)
+					DrawCustomGlyph12(v, x, y, c, LAUNCHER_EXTENDED_LATIN[latin_index]);
 				else
 					DrawAsciiGlyph12(v, x, y, c, '?');
 				x += 6;
@@ -704,12 +603,12 @@ static void DrawHZText12Surface(char *str, u16 len, u16 x, u16 y, u16 c, u16 *v)
 	}
 }
 
-void DrawHZText12(char *str, u16 len, u16 x, u16 y, u16 c, u8 isDrawDirect)
+void DrawHZText12(const char *str, u16 len, u16 x, u16 y, u16 c, u8 isDrawDirect)
 {
 	DrawHZText12Surface(str, len, x, y, c, isDrawDirect ? VideoBuffer : Vcache);
 }
 
-void DrawHZText12ToBuffer(char *str, u16 len, u16 x, u16 y, u16 c, u16 *buffer)
+void DrawHZText12ToBuffer(const char *str, u16 len, u16 x, u16 y, u16 c, u16 *buffer)
 {
 	if(buffer)
 		DrawHZText12Surface(str, len, x, y, c, buffer);
@@ -720,6 +619,7 @@ void DEBUG_printf(const char *format, ...)
     char str[128];
     va_list va;
     va_start(va, format);
+    //vasprintf(str, format, va);
     vsnprintf(str, sizeof(str), format, va);
     va_end(va);
 
@@ -741,7 +641,7 @@ void DEBUG_printf(const char *format, ...)
     }
 }
 //---------------------------------------------------------------------------------
-void ShowbootProgress(char *str)
+void ShowbootProgress(const char *str)
 {
     u16 str_glyphs = DrawText12VisibleLength(str);
     Clear(0,160-15,240,15,gl_color_cheat_black,1);

@@ -1,0 +1,20 @@
+# DS Style GBA Auto Patch
+# Plain-text external game compatibility profile.
+# IRQ32 uses ROM BYTE offsets and is validated against 03007FFC/03FFFFFC.
+# ADD32 feeds the existing deferred Add2()/iPatchInfo2 pipeline.
+# PATCH16/PATCH32 are direct ROM writes; TRIM overrides patch placement.
+# SEARCH32PAIR is a bounded legacy search/write operation.
+FORMAT=2
+GAME=BIVP
+
+VARIANT=1
+# SOURCE=2794 - Ignition Collection Volume 1 - Animal Snap + Super Dropzone + World Tennis Stars(EU).zip
+IRQ32=00000464
+IRQ32=00002488
+IRQ32=00100430
+IRQ32=00106354
+IRQ32=00300440
+IRQ32=00311054
+IRQ32=00700420
+IRQ32=007085F8
+END

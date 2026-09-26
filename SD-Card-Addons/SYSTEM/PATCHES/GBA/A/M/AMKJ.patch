@@ -1,0 +1,18 @@
+# DS Style GBA Auto Patch
+# Plain-text external game compatibility profile.
+# IRQ32 uses ROM BYTE offsets and is validated against 03007FFC/03FFFFFC.
+# ADD32 feeds the existing deferred Add2()/iPatchInfo2 pipeline.
+# PATCH16/PATCH32 are direct ROM writes; TRIM overrides patch placement.
+# SEARCH32PAIR is a bounded legacy search/write operation.
+FORMAT=2
+GAME=AMKJ
+
+VARIANT=1
+# SOURCE=0071 - Mario Kart Advance(JP).zip
+IRQ32=000001CC
+IRQ32=0007DF64
+IRQ32=003082A0
+IRQ32=0032754C
+IRQ32=00340268
+IRQ32=003403B4
+END

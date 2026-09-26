@@ -1,0 +1,25 @@
+# DS Style GBA Auto Patch
+# Plain-text external game compatibility profile.
+# IRQ32 uses ROM BYTE offsets and is validated against 03007FFC/03FFFFFC.
+# ADD32 feeds the existing deferred Add2()/iPatchInfo2 pipeline.
+# PATCH16/PATCH32 are direct ROM writes; TRIM overrides patch placement.
+# SEARCH32PAIR is a bounded legacy search/write operation.
+FORMAT=2
+GAME=BI7E
+
+VARIANT=1
+# SOURCE=2714 - Nickelodeon Vol. 1 GBA 4-Pack(US).zip
+IRQ32=000001C4
+IRQ32=0000028C
+IRQ32=00000C98
+IRQ32=004001E8
+IRQ32=004009F4
+IRQ32=00C00180
+IRQ32=00C007A8
+IRQ32=010001C8
+IRQ32=010002FC
+IRQ32=014000FC
+IRQ32=01402AA8
+IRQ32=01C00694
+IRQ32=01C007E0
+END

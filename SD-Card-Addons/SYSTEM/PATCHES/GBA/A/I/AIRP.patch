@@ -1,0 +1,15 @@
+# DS Style GBA Auto Patch
+# Plain-text external game compatibility profile.
+# IRQ32 uses ROM BYTE offsets and is validated against 03007FFC/03FFFFFC.
+# ADD32 feeds the existing deferred Add2()/iPatchInfo2 pipeline.
+# PATCH16/PATCH32 are direct ROM writes; TRIM overrides patch placement.
+# SEARCH32PAIR is a bounded legacy search/write operation.
+FORMAT=2
+GAME=AIRP
+
+VARIANT=1
+# SOURCE=0843 - Inspector Gadget Racing(EU).zip
+IRQ32=00007144
+# LEGACY_ADD32_SOURCE=0843 - Inspector Gadget Racing(EU)
+ADD32=00000158,E3A00005
+END

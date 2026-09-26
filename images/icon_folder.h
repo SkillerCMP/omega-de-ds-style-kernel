@@ -1,14 +1,14 @@
 
-//{{BLOCK(icon_folder)
+//{{BLOCK(gImage_icon_folder)
 
 //======================================================================
 //
-//	icon_folder, 16x14@16,
+//	gImage_icon_folder, 16x14@16, 
 //	+ bitmap not compressed
 //	Total size: 448 = 448
 //
-//	Time-stamp: 2026-05-07, 15:13:46
-//	Exported by Cearn's GBA Image Transmogrifier, v0.8.3
+//	Time-stamp: 2026-09-26, 00:57:36
+//	Exported by Cearn's GBA Image Transmogrifier, v0.8.6
 //	( http://www.coranac.com/projects/#grit )
 //
 //======================================================================
@@ -48,4 +48,4 @@ const unsigned short gImage_icon_folder[224] __attribute__((aligned(4)))=
 	0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,
 };
 
-//}}BLOCK(icon_folder)
+//}}BLOCK(gImage_icon_folder)

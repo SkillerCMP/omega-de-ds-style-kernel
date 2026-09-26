@@ -1,0 +1,19 @@
+# DS Style GBA Auto Patch
+# Plain-text external game compatibility profile.
+# IRQ32 uses ROM BYTE offsets and is validated against 03007FFC/03FFFFFC.
+# ADD32 feeds the existing deferred Add2()/iPatchInfo2 pipeline.
+# PATCH16/PATCH32 are direct ROM writes; TRIM overrides patch placement.
+# SEARCH32PAIR is a bounded legacy search/write operation.
+FORMAT=2
+GAME=AA2P
+
+VARIANT=1
+# SOURCE=0402 - Super Mario Advance 2 - Super Mario World(EU).zip
+IRQ32=00000278
+IRQ32=000016F0
+IRQ32=00089EE8
+IRQ32=000A0E14
+IRQ32=000A0F88
+IRQ32=000B32AC
+IRQ32=000B3640
+END

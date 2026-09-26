@@ -1,0 +1,18 @@
+# DS Style GBA Auto Patch
+# Plain-text external game compatibility profile.
+# IRQ32 uses ROM BYTE offsets and is validated against 03007FFC/03FFFFFC.
+# ADD32 feeds the existing deferred Add2()/iPatchInfo2 pipeline.
+# PATCH16/PATCH32 are direct ROM writes; TRIM overrides patch placement.
+# SEARCH32PAIR is a bounded legacy search/write operation.
+FORMAT=2
+GAME=BSBJ
+
+VARIANT=1
+# SOURCE=1309 - Sonic Battle(JP).zip
+IRQ32=000000FC
+IRQ32=000161DC
+IRQ32=00016248
+IRQ32=0001632C
+IRQ32=000184E0
+IRQ32=00E9A07C
+END

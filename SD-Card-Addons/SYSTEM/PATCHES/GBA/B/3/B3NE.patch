@@ -1,0 +1,20 @@
+# DS Style GBA Auto Patch
+# Plain-text external game compatibility profile.
+# IRQ32 uses ROM BYTE offsets and is validated against 03007FFC/03FFFFFC.
+# ADD32 feeds the existing deferred Add2()/iPatchInfo2 pipeline.
+# PATCH16/PATCH32 are direct ROM writes; TRIM overrides patch placement.
+# SEARCH32PAIR is a bounded legacy search/write operation.
+FORMAT=2
+GAME=B3NE
+
+VARIANT=1
+# SOURCE=2553 - 3 in 1 Sports Pack - Paintball Splat! + Dodgeball - Dodge This! + Big Alley Bowling(US).zip
+IRQ32=000001C4
+IRQ32=000002EC
+IRQ32=000302A4
+IRQ32=00030BF8
+IRQ32=003001C4
+IRQ32=003004C8
+IRQ32=005E81C4
+IRQ32=005E84B8
+END

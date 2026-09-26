@@ -1,0 +1,20 @@
+# DS Style GBA Auto Patch
+# Plain-text external game compatibility profile.
+# IRQ32 uses ROM BYTE offsets and is validated against 03007FFC/03FFFFFC.
+# ADD32 feeds the existing deferred Add2()/iPatchInfo2 pipeline.
+# PATCH16/PATCH32 are direct ROM writes; TRIM overrides patch placement.
+# SEARCH32PAIR is a bounded legacy search/write operation.
+FORMAT=2
+GAME=ZMAJ
+
+VARIANT=1
+# SOURCE=1913 - Playan AV Player(JP).zip
+IRQ32=000001C8
+IRQ32=000003E8
+IRQ32=001001C8
+IRQ32=001003E8
+IRQ32=002001C8
+IRQ32=002003E8
+IRQ32=003001C8
+IRQ32=003003E8
+END

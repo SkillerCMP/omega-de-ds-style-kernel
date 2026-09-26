@@ -1,0 +1,17 @@
+# DS Style GBA Auto Patch
+# Plain-text external game compatibility profile.
+# IRQ32 uses ROM BYTE offsets and is validated against 03007FFC/03FFFFFC.
+# ADD32 feeds the existing deferred Add2()/iPatchInfo2 pipeline.
+# PATCH16/PATCH32 are direct ROM writes; TRIM overrides patch placement.
+# SEARCH32PAIR is a bounded legacy search/write operation.
+FORMAT=2
+GAME=AONP
+
+VARIANT=1
+# SOURCE=0881 - Bubble Bobble - Old & New(EU).zip
+IRQ32=0000021C
+IRQ32=00000400
+IRQ32=000279FC
+IRQ32=003C1314
+IRQ32=003C14C8
+END

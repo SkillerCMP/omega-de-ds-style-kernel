@@ -1,0 +1,23 @@
+# DS Style GBA Auto Patch
+# Plain-text external game compatibility profile.
+# IRQ32 uses ROM BYTE offsets and is validated against 03007FFC/03FFFFFC.
+# ADD32 feeds the existing deferred Add2()/iPatchInfo2 pipeline.
+# PATCH16/PATCH32 are direct ROM writes; TRIM overrides patch placement.
+# SEARCH32PAIR is a bounded legacy search/write operation.
+FORMAT=2
+GAME=BBKP
+
+VARIANT=1
+# SOURCE=1880 - Donkey Kong - King of Swing(EU).zip
+IRQ32=00000350
+IRQ32=008852A0
+IRQ32=008874D0
+IRQ32=008896A0
+IRQ32=0088B858
+IRQ32=0088DA54
+IRQ32=00891F48
+IRQ32=008E7ACC
+IRQ32=00924E9C
+IRQ32=009622DC
+IRQ32=0099F434
+END

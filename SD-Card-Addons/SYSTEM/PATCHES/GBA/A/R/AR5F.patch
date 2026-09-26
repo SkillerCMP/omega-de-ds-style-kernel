@@ -1,0 +1,24 @@
+# DS Style GBA Auto Patch
+# Plain-text external game compatibility profile.
+# IRQ32 uses ROM BYTE offsets and is validated against 03007FFC/03FFFFFC.
+# ADD32 feeds the existing deferred Add2()/iPatchInfo2 pipeline.
+# PATCH16/PATCH32 are direct ROM writes; TRIM overrides patch placement.
+# SEARCH32PAIR is a bounded legacy search/write operation.
+FORMAT=2
+GAME=AR5F
+
+VARIANT=1
+# SOURCE=0789 - Razmoket, Les - A moi la Fiesta(FR).zip
+IRQ32=000003B0
+IRQ32=0000519C
+IRQ32=00289364
+IRQ32=0028944C
+IRQ32=002A8564
+IRQ32=002A864C
+IRQ32=002C78C4
+IRQ32=002C79AC
+IRQ32=002E9CA4
+IRQ32=002E9D8C
+IRQ32=003094A4
+IRQ32=0030958C
+END

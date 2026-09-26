@@ -102,9 +102,8 @@ my_irq:
 	LDREQ           PC, [R0,#-0xC]		@;old_interrupt_handler
 
 
-	ldr r2,[r0,#REG_P1]
-	bic r2,r2,#0xFF000000
-	bic r2,r2,#0x00FF0000
+	add r2,r0,#0x100
+	ldrh r2,[r2,#0x30]		@;KEYINPUT (0x04000130), 16-bit
 	@;tst r2,#0x0300	@L+R?
 	@;ldrne pc,[r0,#-(0x04000000-0x03FFFFB4)] @to IRQ routine if not pressed
 

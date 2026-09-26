@@ -29,6 +29,7 @@ extern void RTS_Reset_key(void);
 //extern void RTS_Wakeup_key(void);
 extern void RTS_switch(void);
 extern void RTS_state_identity(void);
+extern void RTS_rts2_header(void);
 extern void Cheat_count(void);
 extern void CHEAT(void);
 extern void no_CHEAT_end(void);
@@ -40,20 +41,8 @@ extern void RTS_only_Return_address_L(void);
 extern void RTS_only_SAVE_key(void);
 extern void RTS_only_LOAD_key(void);
 extern void RTS_only_state_identity(void);
+extern void RTS_only_rts2_header(void);
 
-
-extern void Fire_Emblem_0378_patch_start(void);
-extern void Fire_Emblem_0378_patch_end(void);
-extern void Fire_Emblem_1692_patch_start(void);
-extern void Fire_Emblem_1692_patch_end(void);
-extern void Fire_Emblem_A_patch_start(void);
-extern void Fire_Emblem_A_patch_end(void);
-extern void Modify_address_A(void);
-extern void Fire_Emblem_B_patch_start(void);
-extern void Fire_Emblem_B_patch_end(void);
-extern void Modify_address_B(void);
-extern void Fire_Emblem_iQue_patch_start(void);
-extern void Fire_Emblem_iQue_patch_end(void);
 
 extern u32 gl_cheat_count;
 
@@ -69,12 +58,15 @@ u32 Check_RTS(TCHAR* gamefilename);
 u8 Check_mde_file(TCHAR* gamefilename);
 u8 Make_mde_file(TCHAR* gamefilename,u8 Save_num);
 
-void Patch_SpecialROM_sheepmode(void);
-u32 use_internal_engine(u8 gamecode[]);
+/* External plain-text compatibility profile: 0=missing, 1=matched, 2=present/no safe match. */
+u32 AutoPatch_PrepareProfile(TCHAR* gamefilename, u8 gamecode[], u32 romsize);
+u32 use_external_patch_engine(TCHAR* gamefilename, u8 gamecode[], u32 romsize);
+void AutoPatch_AppendDeferredRecords(void);
+void AutoPatch_ApplyTrimOverride(void);
+void AutoPatch_ApplyFixedWrites(void);
+void AutoPatch_ApplySearchWrites(u32 *Data);
 u32 Check_cheat_file(TCHAR *gamefilename);
 void SetTrimSize(u8* buffer,u32 romsize,u32 iSize,u32 mode,BYTE saveMODE);
 u32 Find_spend_address_SpecialROM(u32* Data);
-void Patch_SpecialROM_TrimSize(void);
 u32 Check_game_RTS_FAT(TCHAR *filename,u32 game_save_rts);
 void IWRAM_CODE PatchInternal(u32* Data,int iSize,u32 offset);
-void Patch_SpecialROM_sleepmode(void);

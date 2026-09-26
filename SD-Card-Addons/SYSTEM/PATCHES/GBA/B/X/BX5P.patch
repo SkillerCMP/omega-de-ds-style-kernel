@@ -1,0 +1,23 @@
+# DS Style GBA Auto Patch
+# Plain-text external game compatibility profile.
+# IRQ32 uses ROM BYTE offsets and is validated against 03007FFC/03FFFFFC.
+# ADD32 feeds the existing deferred Add2()/iPatchInfo2 pipeline.
+# PATCH16/PATCH32 are direct ROM writes; TRIM overrides patch placement.
+# SEARCH32PAIR is a bounded legacy search/write operation.
+FORMAT=2
+GAME=BX5P
+
+VARIANT=1
+# SOURCE=2121 - Rayman 10th Anniversary - Rayman Advance + Rayman 3(EU).zip
+IRQ32=000000FC
+IRQ32=000048BC
+IRQ32=00096F30
+IRQ32=00099484
+IRQ32=000AEAC0
+IRQ32=000AF738
+IRQ32=000AF8C0
+IRQ32=000B4198
+IRQ32=000B459C
+IRQ32=000B9644
+IRQ32=000BE300
+END

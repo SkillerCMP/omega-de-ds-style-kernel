@@ -1,5 +1,5 @@
-//#ifndef	EZKERNEL_HEADER
-//#define EZKERNEL_HEADER
+#ifndef EZKERNEL_HEADER
+#define EZKERNEL_HEADER
 
 #include "ff.h"
 #include "ez_define.h"
@@ -54,7 +54,6 @@ extern u16 gl_color_text;
 extern u16 gl_color_selectBG_sd;
 extern u16 gl_color_selectBG_nor;
 extern u16 gl_color_MENU_btn;
-extern u16 gl_color_cheat_count;
 extern u16 gl_color_cheat_black;
 extern u16 gl_color_NORFULL;
 extern u16 gl_color_btn_clean;
@@ -68,3 +67,5 @@ void ShowTime(u32 page_num ,u32 page_mode);
 u8 NOR_list_MENU(u32 show_offset,	u32 file_select);
 u8 SD_list_MENU(u32 show_offset,	u32 file_select,u32 play_re);
 //#endif
+
+#endif /* EZKERNEL_HEADER */

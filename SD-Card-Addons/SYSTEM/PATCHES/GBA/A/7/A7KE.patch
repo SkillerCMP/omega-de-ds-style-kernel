@@ -1,0 +1,22 @@
+# DS Style GBA Auto Patch
+# Plain-text external game compatibility profile.
+# IRQ32 uses ROM BYTE offsets and is validated against 03007FFC/03FFFFFC.
+# ADD32 feeds the existing deferred Add2()/iPatchInfo2 pipeline.
+# PATCH16/PATCH32 are direct ROM writes; TRIM overrides patch placement.
+# SEARCH32PAIR is a bounded legacy search/write operation.
+FORMAT=2
+GAME=A7KE
+
+VARIANT=1
+# SOURCE=0775 - Kirby - Nightmare in Dream Land(US).zip
+IRQ32=00000214
+IRQ32=00000738
+IRQ32=0076B4E8
+IRQ32=0076B680
+IRQ32=0076F99C
+IRQ32=0076FEA0
+IRQ32=007957CC
+IRQ32=00795CD0
+IRQ32=007C0D58
+IRQ32=007C125C
+END

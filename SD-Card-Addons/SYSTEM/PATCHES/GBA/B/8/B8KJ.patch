@@ -1,0 +1,20 @@
+# DS Style GBA Auto Patch
+# Plain-text external game compatibility profile.
+# IRQ32 uses ROM BYTE offsets and is validated against 03007FFC/03FFFFFC.
+# ADD32 feeds the existing deferred Add2()/iPatchInfo2 pipeline.
+# PATCH16/PATCH32 are direct ROM writes; TRIM overrides patch placement.
+# SEARCH32PAIR is a bounded legacy search/write operation.
+FORMAT=2
+GAME=B8KJ
+
+VARIANT=1
+# SOURCE=1454 - Hoshi no Kirby - Kagami no Daimeikyuu(JP).zip
+IRQ32=000001C0
+IRQ32=00151BD4
+IRQ32=00D3D5A4
+IRQ32=00D4605C
+IRQ32=00DEB328
+IRQ32=00DF4EA8
+IRQ32=00EACED4
+IRQ32=00EB7104
+END

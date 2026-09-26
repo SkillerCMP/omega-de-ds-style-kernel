@@ -1,0 +1,23 @@
+# DS Style GBA Auto Patch
+# Plain-text external game compatibility profile.
+# IRQ32 uses ROM BYTE offsets and is validated against 03007FFC/03FFFFFC.
+# ADD32 feeds the existing deferred Add2()/iPatchInfo2 pipeline.
+# PATCH16/PATCH32 are direct ROM writes; TRIM overrides patch placement.
+# SEARCH32PAIR is a bounded legacy search/write operation.
+FORMAT=2
+GAME=BLFE
+
+VARIANT=1
+# SOURCE=2288 - 2 Games in 1 - Dragon Ball Z I & II(US).zip
+IRQ32=00040108
+IRQ32=004C57F4
+IRQ32=004CE2A8
+IRQ32=004D4914
+IRQ32=004D4A0C
+IRQ32=004D7D40
+PATCH16=00040356,0000
+PATCH16=0004035E,0000
+PATCH16=0004037E,0000
+PATCH16=00040382,0000
+PATCH16=00BB9016,1001
+END

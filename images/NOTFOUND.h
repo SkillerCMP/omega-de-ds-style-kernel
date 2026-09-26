@@ -1,14 +1,14 @@
 
-//{{BLOCK(NOTFOUND)
+//{{BLOCK(gImage_NOTFOUND)
 
 //======================================================================
 //
-//	NOTFOUND, 120x80@16,
+//	gImage_NOTFOUND, 120x80@16, 
 //	+ bitmap not compressed
 //	Total size: 19200 = 19200
 //
-//	Time-stamp: 2026-04-01, 16:45:50
-//	Exported by Cearn's GBA Image Transmogrifier, v0.8.3
+//	Time-stamp: 2026-09-26, 00:57:35
+//	Exported by Cearn's GBA Image Transmogrifier, v0.8.6
 //	( http://www.coranac.com/projects/#grit )
 //
 //======================================================================
@@ -1366,4 +1366,4 @@ const unsigned short gImage_NOTFOUND[9600] __attribute__((aligned(4)))=
 	0x4A52,0x4A52,0x4A52,0x4A52,0x4A52,0x4A52,0x4A52,0x4A52,
 };
 
-//}}BLOCK(NOTFOUND)
+//}}BLOCK(gImage_NOTFOUND)

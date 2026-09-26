@@ -7,9 +7,9 @@
 #include "ez_define.h"
 #include "draw.h"
 #include "GBApatch.h"
+#include "rts3_identity.h"
 #include "gba_nes_patch.h"
 #include "ezkernel.h"
-#include "reset_table.h"
 #include "lang.h"
 #include "showcht.h"
 #include "Ezcard_OP.h"
@@ -33,6 +33,7 @@ u32 w_cheat_on;
 SPatchInfo2 iPatchInfo2[EMax];
 u32 iCount2;
 extern ST_entry pCHEAT[];
+extern u16 gl_engine_sel; /* actual definition is u16 in setwindow.c */
 
 #define sizeofa(array) (sizeof(array)/sizeof(array[0]))
 
@@ -45,11 +46,14 @@ u32 spend_address;
  */
 static u32 g_rts_state_game_code;
 static u32 g_rts_state_rom_size;
+static u32 g_rts_rom_header_crc;
 
 static void SetRtsStateIdentity(const u32 *data, u32 rom_size)
 {
 	g_rts_state_game_code = 0;
 	g_rts_state_rom_size = rom_size;
+	g_rts_rom_header_crc = (data != NULL && rom_size >= RTS3_ROM_HEADER_SIZE)
+		? Rts3Crc32(data, RTS3_ROM_HEADER_SIZE) : 0;
 
 	if (data != NULL && rom_size >= 0xB0)
 		memcpy(&g_rts_state_game_code, ((const u8*)data) + 0xAC, 4);
@@ -112,8 +116,6 @@ static u32 WritePSRAMRomByte(u32 offset, u8 value, void *context)
 	return 1;
 }
 
-/* Forward declaration used by GBApatch_PSRAM/GBApatch_NOR. */
-void Patch_somegame(u32 *Data);
 //------------------------------------------------------------------
 void Write(u32 romaddress, const u8* buffer, u32 size)
 {
@@ -146,113 +148,6 @@ void Write(u32 romaddress, const u8* buffer, u32 size)
 		//DEBUG_printf("address{%x}:%x %x %x %x", romaddress,page,Address,size ,((vu32*)buffer)[0]);
 		SetPSRampage(0);
 	}
-}
-//------------------------------------------------------------------
-bool IWRAM_CODE PatchDragonBallZ(u32 *Data)
-{
-  bool res=false;
-	const u32 game_codes_DragonBallZ[]=
-	{
-	  0x45464c42, //2 Games in 1 - Dragon Ball Z - The Legacy of Goku I & II (USA).gba
-	  0x50474c41, //Dragon Ball Z - The Legacy of Goku (Europe) (En,Fr,De,Es,It).gba
-	  0x45474c41, //Dragon Ball Z - The Legacy of Goku (USA).gba
-	  0x50464c41, //Dragon Ball Z - The Legacy of Goku II (Europe) (En,Fr,De,Es,It).gba
-	  0x45464c41, //Dragon Ball Z - The Legacy of Goku II (USA).gba
-	  0x4a464c41,  //Dragon Ball Z - The Legacy of Goku II International (Japan).gba
-
-	  0x45593241   //1928 - Top Gun - Combat Zones(US).gba
-	  
-	};
-  const u32 patch_1_offsets[]=
-  {
-    0x033C,
-    0x0340,
-    0x0356,
-    0x035A,
-    0x035E,
-    0x0384,
-    0x0388,
-    0x494C,
-    0x4950,
-    0x4978,
-    0x497C,
-    0x998E,
-    0x9992
-  };
-  const u32 patch_2_offsets[]=
-  {
-    0x356,
-    0x35e,
-    0x37e,
-    0x382
-  };
-  s32 index_DragonBallZ=-1;
-  for(u32 ii=0;ii<sizeofa(game_codes_DragonBallZ);ii++)
-  {
-    if( *(u32*)GAMECODE==game_codes_DragonBallZ[ii])
-    {
-      index_DragonBallZ=ii;
-      break;
-    }
-  }
-  if( index_DragonBallZ!=-1)
-  {
-    u16 patch=0;
-    res=true;
-    switch( index_DragonBallZ)
-    {
-      case 0: //2in1 us
-        for(u32 ii=0;ii<sizeofa(patch_2_offsets);ii++)
-        {
-          Write(patch_2_offsets[ii]+0x40000,(u8*)&patch,sizeof(patch));
-        }
-        patch=0x1001;
-        Write(0xbb9016,(u8*)&patch,sizeof(patch));
-        break;
-      case 1: //I eu
-        patch=0x46c0;
-        for(u32 ii=0;ii<sizeofa(patch_1_offsets);ii++)
-        {
-          Write(patch_1_offsets[ii],(u8*)&patch,sizeof(patch));
-        }
-        break;
-      case 2: //I us
-        for(u32 ii=0;ii<sizeofa(patch_2_offsets);ii++)
-        {
-          Write(patch_2_offsets[ii],(u8*)&patch,sizeof(patch));
-        }
-        break;
-      case 3: //II eu
-        patch=0x1001;
-        Write(0x6f42b2,(u8*)&patch,sizeof(patch));
-        break;
-      case 4: //II us
-        patch=0x1001;
-        Write(0x3b8e9e,(u8*)&patch,sizeof(patch));
-        break;
-      case 5: //II jp
-        patch=0x1001;
-        Write(0x3fc8f6,(u8*)&patch,sizeof(patch));
-        break;
-      case 6: //1928 - Top Gun - Combat Zones(US).gba
-    	patch=0x3401;
-	    Write(0x088816,(u8*)&patch,sizeof(patch));
-    	patch=0x46c0; //only need one
-	    Write(0x088814,(u8*)&patch,sizeof(patch));
-	    Write(0x088932,(u8*)&patch,sizeof(patch));
-	    Write(0x088938,(u8*)&patch,sizeof(patch));
-	    Write(0x08893C,(u8*)&patch,sizeof(patch));
-	    Write(0x08897C,(u8*)&patch,sizeof(patch));
-	    Write(0x088982,(u8*)&patch,sizeof(patch));
-	    Write(0x088986,(u8*)&patch,sizeof(patch));
-	    Write(0x088988,(u8*)&patch,sizeof(patch));
-	    break;
-      default:
-        res=false;
-        break;
-    }
-  }
-  return res;
 }
 //------------------------------------------------------------------
 void IWRAM_CODE CheckNes(u32 *Data)
@@ -349,21 +244,16 @@ void SetTrimSize(u8* buffer,u32 romsize,u32 iSize,u32 mode,BYTE saveMODE)
   u32 top;
   u32 alignedSize;
 
-	u32  PATCH_LENGTH;
+	u32 PATCH_LENGTH;
+    if (gl_rts_on == 1 && gl_cheat_on == 0 && gl_reset_on == 0 && gl_sleep_on == 0)
+        PATCH_LENGTH = (u32)((u8*)RTS_only_ReplaceIRQ_end - (u8*)RTS_only_ReplaceIRQ_start);
+    else if (gl_rts_on == 1 || gl_cheat_on == 1)
+        PATCH_LENGTH = (u32)((u8*)RTS_ReplaceIRQ_end - (u8*)RTS_ReplaceIRQ_start)
+            + MAX_RUNTIME_CHEAT_RECORDS * 8u;
+    else
+        PATCH_LENGTH = (u32)((u8*)Sleep_ReplaceIRQ_end - (u8*)Sleep_ReplaceIRQ_start);
+    PATCH_LENGTH = (PATCH_LENGTH + 31u) & ~15u; /* placement/alignment margin */
 
-	if((gl_rts_on==1)/* || (gl_cheat_on==1)*/ )		
-	{
-		PATCH_LENGTH = 0x1000;
-	}
-	else 
-	{
-		PATCH_LENGTH = 0x300;	
-	}
-	
-	if(gl_cheat_on==1){
-		PATCH_LENGTH = 0x2000;
-	}
-	
   if(0)
   {
 	  iTrimSize = 0x1fff000;
@@ -439,7 +329,7 @@ void SetTrimSize(u8* buffer,u32 romsize,u32 iSize,u32 mode,BYTE saveMODE)
 	  			iTrimSize = 0x2000000-PATCH_LENGTH; //page
 	  }
 	}
-  Patch_SpecialROM_TrimSize();
+  AutoPatch_ApplyTrimOverride();
 }
 //------------------------------------------------------------------
 void Patch_B_address(void)
@@ -501,7 +391,11 @@ void Patch_Reset_Sleep(u32 *Data)
 //------------------------------------------------------------------
 void Patch_RTS_Cheat(u32 *Data)
 {
-	Patch_B_address();
+    u32 max_runtime_size = (u32)((u8*)RTS_ReplaceIRQ_end - (u8*)RTS_ReplaceIRQ_start) + MAX_RUNTIME_CHEAT_RECORDS * 8u;
+    if (max_runtime_size > 0x5400u || iTrimSize > 0x2000000u - max_runtime_size) {
+        return; /* Never install a partially copied runtime. */
+    }
+
 	u32 Return_address = 0x8000000+ EA_offset*4 + 8;
 	
   u8 * p_patch_start  = (u8*)RTS_ReplaceIRQ_start;
@@ -572,17 +466,23 @@ void Patch_RTS_Cheat(u32 *Data)
 
 	u32 copysize = p_no_cheat_end-p_patch_start ;
 	copysize = copysize + output_count*8;
-	if(	iTrimSize+copysize > 0x2000000){
-		copysize = 0x2000000 - iTrimSize;
-	}
-	//DEBUG_printf("iTrimSize =%x %x", iTrimSize,copysize);
-		
+    if (!Rts3FinalizeRuntime16(patchbuffer, copysize,
+            (size_t)((u8*)RTS_rts2_header - p_patch_start),
+            g_rts_state_game_code, g_rts_state_rom_size, g_rts_rom_header_crc,
+            0x08000000u + iTrimSize))
+        return;
+    Patch_B_address();
+
 	Write(iTrimSize, patchbuffer,copysize);
 }
 //------------------------------------------------------------------
 void Patch_RTS_only(u32 *Data)
 {
-	Patch_B_address();
+    u32 max_runtime_size = (u32)((u8*)RTS_only_ReplaceIRQ_end - (u8*)RTS_only_ReplaceIRQ_start);
+    if (max_runtime_size > 0x5400u || iTrimSize > 0x2000000u - max_runtime_size) {
+        return; /* Never install a partially copied runtime. */
+    }
+
 	u32 Return_address = 0x8000000+ EA_offset*4 + 8;
 	
   u8 * p_patch_start  = (u8*)RTS_only_ReplaceIRQ_start;
@@ -617,11 +517,13 @@ void Patch_RTS_only(u32 *Data)
 
 	u32 copysize = p_patch_end - p_patch_start ;
 	
-	if(	iTrimSize+copysize > 0x2000000){
-		copysize = 0x2000000 - iTrimSize; //????
-	}
-	//DEBUG_printf("iTrimSize =%x %x", iTrimSize,copysize);
-		
+    if (!Rts3FinalizeRuntime16(patchbuffer, copysize,
+            (size_t)((u8*)RTS_only_rts2_header - p_patch_start),
+            g_rts_state_game_code, g_rts_state_rom_size, g_rts_rom_header_crc,
+            0x08000000u + iTrimSize))
+        return;
+    Patch_B_address();
+
 	Write(iTrimSize, patchbuffer,copysize);
 }
 //------------------------------------------------------------------
@@ -631,8 +533,7 @@ void GBApatch_Cleanrom(u32* address,int filesize)//Only once
 	is_NORpatch = 0;
 	CheckNes(address);
 	PatchNes(address);
-	PatchDragonBallZ(address);
-	//Check_Fire_Emblem();
+	AutoPatch_ApplyFixedWrites();
 }
 //------------------------------------------------------------------
 u32 Get_spend_address(u32* Data)
@@ -695,8 +596,8 @@ void GBApatch_PSRAM(u32* address,int filesize)//Only once
 	
 	CheckNes(address);
 	PatchNes(address);
-	PatchDragonBallZ(address);
-	Patch_somegame(address);
+	AutoPatch_ApplyFixedWrites();
+	AutoPatch_ApplySearchWrites(address);
 
 	/* ROM: bytes are final boot-time image edits and use no IRQ slots. */
 	if (gl_cheat_on == 1)
@@ -704,12 +605,12 @@ void GBApatch_PSRAM(u32* address,int filesize)//Only once
 			rom_context.rom_size);
 	
 	if( (gl_rts_on==1) && (gl_cheat_on == 0)  && (gl_reset_on == 0)  && (gl_sleep_on == 0)  ) {
-		spend_address = Get_spend_address(address);
+		spend_address = 0; /* 13.7e1: CPU backup uses reserved SRAM, not game RAM. */
 		Patch_RTS_only(address);		
 	}
 	else if((gl_rts_on==1) ||  ((gl_cheat_on==1)&& (gl_cheat_count>0) ) )		
 	{
-		spend_address = Get_spend_address(address);
+		spend_address = 0; /* 13.7e1: CPU backup uses reserved SRAM, not game RAM. */
 		//DEBUG_printf("spend_address =%x",spend_address);
 		Patch_RTS_Cheat(address);
 	}
@@ -728,12 +629,25 @@ void GBApatch_Cleanrom_NOR(u32* address,u32 offset)
 		CheckNes(address);
 	}
 	PatchNes(address);
-	PatchDragonBallZ(address);
-	//Check_Fire_Emblem();
+	AutoPatch_ApplyFixedWrites();
 }
 //------------------------------------------------------------------
 void GBApatch_NOR(u32* address,int filesize,u32 offset)
 {
+    /* NOR writes its entry hook in block zero, before Patch_RTS_* runs.
+     * Apply the same capacity gate here so a failure cannot leave that hook
+     * pointing to an absent/truncated runtime. */
+    if (gl_rts_on == 1 || (gl_cheat_on == 1 && gl_cheat_count > 0)) {
+        u32 bytes;
+        if (gl_rts_on == 1 && gl_cheat_on == 0 && gl_reset_on == 0 && gl_sleep_on == 0)
+            bytes=(u32)((u8*)RTS_only_ReplaceIRQ_end-(u8*)RTS_only_ReplaceIRQ_start);
+        else
+            bytes=(u32)((u8*)RTS_ReplaceIRQ_end-(u8*)RTS_ReplaceIRQ_start)
+                + MAX_RUNTIME_CHEAT_RECORDS*8u;
+        if (bytes > 0x5400u || iTrimSize > 0x2000000u-bytes)
+            return;
+    }
+
 	windows_offset = offset;
 	is_NORpatch = 1;
   if(offset==0)
@@ -745,13 +659,12 @@ void GBApatch_NOR(u32* address,int filesize,u32 offset)
 		u32 B_install_handler;
 		B_install_handler = 0xEA000000|((iTrimSize-8)/4);
 		Write(0,(u8*)&B_install_handler , 4); //B
-		spend_address = Get_spend_address(address);
+		spend_address = 0; /* 13.7e1: CPU backup uses reserved SRAM, not game RAM. */
 		
-		Patch_somegame(address);
+		AutoPatch_ApplySearchWrites(address);
   }
 	PatchNes(address);
-	PatchDragonBallZ(address);
-	//Check_Fire_Emblem();
+	AutoPatch_ApplyFixedWrites();
 
 	if( (gl_rts_on==1) && (gl_cheat_on == 0)  && (gl_reset_on == 0)  && (gl_sleep_on == 0)  ) {
 		Patch_RTS_only(address);		
@@ -817,6 +730,14 @@ void GBA_patch_init_buffer(u32* buffer)
 //------------------------------------------------------------------
 u32 Check_pat(TCHAR* gamefilename)
 {
+    /* Table/external mode must consult today's external variants before any
+     * old cache. BPRE/BPGE are also rebuilt in scanner mode after this change. */
+    if ((gl_engine_sel != 0 && gl_select_lang != 0xE2E2) ||
+        !memcmp(GAMECODE,"BPRE",4) || !memcmp(GAMECODE,"BPGE",4)) {
+        GBA_patch_init();
+        return 0;
+    }
+
 	UINT  ret;
 	u32 find_the_patfile;
 	u32 patfilesize;
@@ -832,9 +753,21 @@ u32 Check_pat(TCHAR* gamefilename)
 		if(res == FR_OK)//have a old file
 		{
 			patfilesize = f_size(&gfile);
-			f_read(&gfile, pReadCache, patfilesize, &ret);
-			f_close(&gfile);
-			find_the_patfile = 1;
+			ret = 0;
+            find_the_patfile = 0;
+            if (patfilesize == sizeof(iPatchInfo2) + 16u * sizeof(u32)) {
+                res = f_read(&gfile, pReadCache, patfilesize, &ret);
+                if (res == FR_OK && ret == patfilesize) {
+                    const u32 *cache = (const u32*)pReadCache;
+                    u32 trailer = sizeof(iPatchInfo2) / (sizeof(u32));
+                    if (cache[trailer + 12] == RTS3_KERNEL_ABI &&
+                        cache[trailer + 5] <= EMax && cache[trailer + 15] == 0 &&
+                        cache[trailer + 13] == Rts3Crc32(pReadCache,sizeof(iPatchInfo2)) &&
+                        cache[trailer + 14] == Rts3Crc32(cache + trailer,14u*sizeof(u32)))
+                        find_the_patfile = 1;
+                }
+            }
+            f_close(&gfile);
 		}					
 		else
 		{
@@ -880,7 +813,7 @@ void Make_pat_file(TCHAR* gamefilename)
 		TCHAR patnamebuf[100];	
 		make_pat_name(patnamebuf,gamefilename);
 
-		res = f_open(&gfile,patnamebuf, FA_WRITE | FA_OPEN_ALWAYS);
+		res = f_open(&gfile,patnamebuf, FA_WRITE | FA_CREATE_ALWAYS);
 		if(res == FR_OK)
 		{	
 			f_lseek(&gfile, 0x0000);
@@ -898,6 +831,9 @@ void Make_pat_file(TCHAR* gamefilename)
 			w_buffer[9] = gl_rts_on;
 			w_buffer[10] = gl_sleep_on;
 			w_buffer[11] = gl_cheat_on;
+            w_buffer[12] = RTS3_KERNEL_ABI; /* Reject stale runtime placement caches. */
+            w_buffer[13] = Rts3Crc32(iPatchInfo2,sizeof(iPatchInfo2));
+            w_buffer[14] = Rts3Crc32(w_buffer,14u*sizeof(u32));
 					
 			res=f_write(&gfile, (void*)w_buffer, sizeof(w_buffer), (UINT*)&written);
 			f_close(&gfile);
@@ -1078,495 +1014,494 @@ u32 Check_RTS(TCHAR* gamefilename)
 	return rtsfilesize;
 }
 //------------------------------------------------------------------
-static u32 ResetTable_ReadLE24(const u8 *data)
+#define AUTO_PATCH_EXTERNAL_MISSING 0u
+#define AUTO_PATCH_EXTERNAL_MATCHED 1u
+#define AUTO_PATCH_EXTERNAL_NO_MATCH 2u
+#define AUTO_PATCH_FORMAT_VERSION 2u
+#define AUTO_PATCH_MAX_VARIANT_IRQ 96u
+#define AUTO_PATCH_MAX_ADD32 8u
+#define AUTO_PATCH_MAX_PATCH16 24u
+#define AUTO_PATCH_MAX_PATCH32 8u
+#define AUTO_PATCH_MAX_SEARCH32PAIR 4u
+
+typedef struct AUTO_PATCH_WRITE32_
 {
-	return (u32)data[0] | ((u32)data[1] << 8) | ((u32)data[2] << 16);
-}
+	u32 offset;
+	u32 value;
+} AUTO_PATCH_WRITE32;
 
-static u32 ResetTable_ReadLE32(const u8 *data)
+typedef struct AUTO_PATCH_WRITE16_
 {
-	return (u32)data[0] | ((u32)data[1] << 8) |
-		((u32)data[2] << 16) | ((u32)data[3] << 24);
-}
+	u32 offset;
+	u16 value;
+	u16 reserved;
+} AUTO_PATCH_WRITE16;
 
-u32 use_internal_engine(u8 gamecode[])
+typedef struct AUTO_PATCH_SEARCH32PAIR_
 {
-	const u8 *cursor = reset_table_packed;
-	const u8 *end = reset_table_packed + sizeof(reset_table_packed);
-	u32 requested_game_code;
+	u32 start;
+	u32 length;
+	u32 word0;
+	u32 word1;
+	u32 write_delta;
+	u32 replacement;
+} AUTO_PATCH_SEARCH32PAIR;
 
-	g_Offset = 0;
-	memcpy(&requested_game_code, gamecode, sizeof(requested_game_code));
+typedef struct AUTO_PATCH_PROFILE_
+{
+	u32 game_code;
+	u32 variant;
+	u32 no_irq;
+	u32 irq_total;
+	u32 irq_count;
+	u32 irq_offsets[EMax];
+	u32 add32_count;
+	AUTO_PATCH_WRITE32 add32[AUTO_PATCH_MAX_ADD32];
+	u32 patch16_count;
+	AUTO_PATCH_WRITE16 patch16[AUTO_PATCH_MAX_PATCH16];
+	u32 patch32_count;
+	AUTO_PATCH_WRITE32 patch32[AUTO_PATCH_MAX_PATCH32];
+	u32 trim_valid;
+	u32 trim_size;
+	u32 search_count;
+	AUTO_PATCH_SEARCH32PAIR search[AUTO_PATCH_MAX_SEARCH32PAIR];
+} AUTO_PATCH_PROFILE;
 
-	while((u32)(end - cursor) >= 4u)
+static AUTO_PATCH_PROFILE g_auto_patch_profile;
+static u32 g_auto_patch_status = AUTO_PATCH_EXTERNAL_MISSING;
+static u32 g_auto_patch_prepared_game_code = 0;
+static u32 g_auto_patch_prepared_rom_size = 0;
+
+static u32 AutoPatch_IsSafeGameCode(const u8 gamecode[4])
+{
+	u32 index;
+	for(index = 0; index < 4; index++)
 	{
-		u32 table_game_code = ResetTable_ReadLE32(cursor);
-		cursor += 4;
-
-		if(table_game_code == 0xFFFFFFFFu)
+		if(!((gamecode[index] >= '0' && gamecode[index] <= '9') ||
+			(gamecode[index] >= 'A' && gamecode[index] <= 'Z') ||
+			(gamecode[index] >= 'a' && gamecode[index] <= 'z')))
 			return 0;
-		if(cursor >= end)
-			return 0;
-
-		u32 count = *cursor++;
-		u32 payload_size = count * 3u;
-		if((u32)(end - cursor) < payload_size)
-			return 0;
-
-		if(table_game_code == requested_game_code)
-		{
-			iCount2 = 0;
-			for(u32 index = 0; index < count; index++)
-			{
-				Add2(ResetTable_ReadLE24(cursor + index * 3u), 0x3007FF4);
-			}
-			return 1;
-		}
-
-		cursor += payload_size;
 	}
+	return 1;
+}
 
+static char AutoPatch_HexDigit(u8 value)
+{
+	value &= 0x0F;
+	return (char)((value < 10) ? ('0' + value) : ('A' + value - 10));
+}
+
+static void AutoPatch_BuildExternalPath(char *path, u32 path_size, const u8 gamecode[4])
+{
+	if(path == NULL || path_size == 0)
+		return;
+	path[0] = 0;
+
+	if(AutoPatch_IsSafeGameCode(gamecode))
+	{
+		snprintf(path, path_size, "/SYSTEM/PATCHES/GBA/%c/%c/%c%c%c%c.patch",
+			gamecode[0], gamecode[1], gamecode[0], gamecode[1], gamecode[2], gamecode[3]);
+	}
+	else if(path_size >= sizeof("/SYSTEM/PATCHES/GBA/_HEX/00000000.patch"))
+	{
+		char *out = path;
+		const char prefix[] = "/SYSTEM/PATCHES/GBA/_HEX/";
+		u32 index;
+		memcpy(out, prefix, sizeof(prefix) - 1);
+		out += sizeof(prefix) - 1;
+		for(index = 0; index < 4; index++)
+		{
+			*out++ = AutoPatch_HexDigit(gamecode[index] >> 4);
+			*out++ = AutoPatch_HexDigit(gamecode[index]);
+		}
+		memcpy(out, ".patch", sizeof(".patch"));
+	}
+}
+
+static u32 AutoPatch_ParseHex32(const char *text, u32 *value)
+{
+	u32 result = 0;
+	u32 digits = 0;
+	if(text == NULL || value == NULL)
+		return 0;
+	while(*text)
+	{
+		u32 nibble;
+		char ch = *text++;
+		if(ch >= '0' && ch <= '9') nibble = (u32)(ch - '0');
+		else if(ch >= 'A' && ch <= 'F') nibble = (u32)(ch - 'A' + 10);
+		else if(ch >= 'a' && ch <= 'f') nibble = (u32)(ch - 'a' + 10);
+		else return 0;
+		if(digits >= 8) return 0;
+		result = (result << 4) | nibble;
+		digits++;
+	}
+	if(digits == 0)
+		return 0;
+	*value = result;
+	return 1;
+}
+
+static u32 AutoPatch_ParseHexFields(const char *text, u32 *values, u32 count)
+{
+	u32 index;
+	const char *cursor = text;
+	if(text == NULL || values == NULL || count == 0)
+		return 0;
+	for(index = 0; index < count; index++)
+	{
+		char temp[9];
+		u32 length = 0;
+		while(cursor[length] && cursor[length] != ',')
+		{
+			if(length >= 8) return 0;
+			temp[length] = cursor[length];
+			length++;
+		}
+		if(length == 0) return 0;
+		temp[length] = 0;
+		if(!AutoPatch_ParseHex32(temp, &values[index])) return 0;
+		cursor += length;
+		if(index + 1 < count)
+		{
+			if(*cursor != ',') return 0;
+			cursor++;
+		}
+		else if(*cursor != 0)
+			return 0;
+	}
+	return 1;
+}
+
+static u32 AutoPatch_GameLineMatches(const char *line, const u8 gamecode[4])
+{
+	if(!strncmp(line, "GAME=", 5))
+		return strlen(line + 5) == 4 && !memcmp(line + 5, gamecode, 4);
+
+	if(!strncmp(line, "GAMEHEX=", 8))
+	{
+		u32 index;
+		const char *hex = line + 8;
+		if(strlen(hex) != 8)
+			return 0;
+		for(index = 0; index < 4; index++)
+		{
+			u32 pair;
+			char temp[3];
+			temp[0] = hex[index * 2];
+			temp[1] = hex[index * 2 + 1];
+			temp[2] = 0;
+			if(!AutoPatch_ParseHex32(temp, &pair) || pair != gamecode[index])
+				return 0;
+		}
+		return 1;
+	}
 	return 0;
 }
-//------------------------------------------------------------------
-void Patch_SpecialROM_sleepmode(void)
+
+static u32 AutoPatch_VerifyIrqVariant(FIL *rom, const u32 *offsets, u32 count, u32 romsize)
 {
+	u32 index;
+	UINT read = 0;
+	if(rom == NULL || offsets == NULL || count == 0)
+		return 0;
+	for(index = 0; index < count; index++)
+	{
+		u32 value = 0;
+		u32 offset = offsets[index];
+		if((offset & 3u) != 0 || offset > romsize || romsize - offset < 4u)
+			return 0;
+		if(f_lseek(rom, offset) != FR_OK)
+			return 0;
+		read = 0;
+		if(f_read(rom, &value, sizeof(value), &read) != FR_OK || read != sizeof(value))
+			return 0;
+		if(value != 0x03007FFCu && value != 0x03FFFFFCu)
+			return 0;
+	}
+	return 1;
+}
+
+u32 AutoPatch_PrepareProfile(TCHAR* gamefilename, u8 gamecode[], u32 romsize)
+{
+	char patch_path[64];
+	u32 patch_size;
+	UINT read = 0;
+	FRESULT result;
+	char *cursor;
+	char *end;
+	u32 format_ok = 0;
+	u32 game_ok = 0;
+	u32 in_variant = 0;
+	u32 variant_number = 0;
+	u32 irq_seen = 0;
+	AUTO_PATCH_PROFILE *candidate = (AUTO_PATCH_PROFILE*)(pReadCache + MAX_pReadCache_size - sizeof(AUTO_PATCH_PROFILE));
+
+	memset(&g_auto_patch_profile, 0, sizeof(g_auto_patch_profile));
+	g_auto_patch_status = AUTO_PATCH_EXTERNAL_MISSING;
+	g_auto_patch_prepared_game_code = 0;
+	g_auto_patch_prepared_rom_size = romsize;
+	if(gamecode != NULL)
+		memcpy(&g_auto_patch_prepared_game_code, gamecode, 4);
+
+	if(gamefilename == NULL || gamecode == NULL || romsize < 4)
+		return g_auto_patch_status;
+
+	AutoPatch_BuildExternalPath(patch_path, sizeof(patch_path), gamecode);
+	if(patch_path[0] == 0)
+		return g_auto_patch_status;
+
+	result = f_open(&gfile, patch_path, FA_READ);
+	if(result != FR_OK)
+		return g_auto_patch_status;
+
+	patch_size = f_size(&gfile);
+	if(patch_size == 0 || patch_size + 1u >= MAX_pReadCache_size - sizeof(AUTO_PATCH_PROFILE))
+	{
+		f_close(&gfile);
+		g_auto_patch_status = AUTO_PATCH_EXTERNAL_NO_MATCH;
+		return g_auto_patch_status;
+	}
+	result = f_read(&gfile, pReadCache, patch_size, &read);
+	f_close(&gfile);
+	if(result != FR_OK || read != patch_size)
+	{
+		g_auto_patch_status = AUTO_PATCH_EXTERNAL_NO_MATCH;
+		return g_auto_patch_status;
+	}
+	pReadCache[patch_size] = 0;
+
+	result = f_open(&gfile, gamefilename, FA_READ);
+	if(result != FR_OK)
+	{
+		g_auto_patch_status = AUTO_PATCH_EXTERNAL_NO_MATCH;
+		return g_auto_patch_status;
+	}
+
+	memset(candidate, 0, sizeof(*candidate));
+	cursor = (char*)pReadCache;
+	end = cursor + patch_size;
+	while(cursor < end)
+	{
+		char *line = cursor;
+		char *line_end;
+		while(cursor < end && *cursor != '\n' && *cursor != '\r') cursor++;
+		line_end = cursor;
+		while(cursor < end && (*cursor == '\n' || *cursor == '\r')) cursor++;
+		*line_end = 0;
+		while(*line == ' ' || *line == '\t') line++;
+		while(line_end > line && (line_end[-1] == ' ' || line_end[-1] == '\t')) *--line_end = 0;
+		if(*line == 0 || *line == '#')
+			continue;
+
+		if(!strncmp(line, "FORMAT=", 7))
+		{
+			u32 version;
+			if(!AutoPatch_ParseHex32(line + 7, &version) || version != AUTO_PATCH_FORMAT_VERSION)
+				goto external_invalid;
+			format_ok = 1;
+			continue;
+		}
+		if(!strncmp(line, "GAME=", 5) || !strncmp(line, "GAMEHEX=", 8))
+		{
+			if(!AutoPatch_GameLineMatches(line, gamecode))
+				goto external_invalid;
+			game_ok = 1;
+			continue;
+		}
+		if(!strncmp(line, "VARIANT=", 8))
+		{
+			u32 parsed_variant;
+			if(in_variant || !format_ok || !game_ok ||
+				!AutoPatch_ParseHex32(line + 8, &parsed_variant))
+				goto external_invalid;
+			in_variant = 1;
+			variant_number = parsed_variant;
+			irq_seen = 0;
+			memset(candidate, 0, sizeof(*candidate));
+			candidate->variant = variant_number;
+			memcpy(&candidate->game_code, gamecode, 4);
+			continue;
+		}
+		if(!strcmp(line, "NO_IRQ=1"))
+		{
+			if(!in_variant || irq_seen != 0)
+				goto external_invalid;
+			candidate->no_irq = 1;
+			continue;
+		}
+		if(!strncmp(line, "IRQ32=", 6))
+		{
+			u32 offset;
+			if(!in_variant || candidate->no_irq || irq_seen >= AUTO_PATCH_MAX_VARIANT_IRQ ||
+				!AutoPatch_ParseHex32(line + 6, &offset))
+				goto external_invalid;
+			if(candidate->irq_count < EMax)
+				candidate->irq_offsets[candidate->irq_count++] = offset;
+			irq_seen++;
+			candidate->irq_total = irq_seen;
+			continue;
+		}
+		if(!strncmp(line, "ADD32=", 6))
+		{
+			u32 fields[2];
+			if(!in_variant || candidate->add32_count >= AUTO_PATCH_MAX_ADD32 ||
+				!AutoPatch_ParseHexFields(line + 6, fields, 2) || (fields[0] & 3u) != 0)
+				goto external_invalid;
+			candidate->add32[candidate->add32_count].offset = fields[0];
+			candidate->add32[candidate->add32_count].value = fields[1];
+			candidate->add32_count++;
+			continue;
+		}
+		if(!strncmp(line, "PATCH16=", 8))
+		{
+			u32 fields[2];
+			if(!in_variant || candidate->patch16_count >= AUTO_PATCH_MAX_PATCH16 ||
+				!AutoPatch_ParseHexFields(line + 8, fields, 2) || fields[1] > 0xFFFFu ||
+				(fields[0] & 1u) != 0 || fields[0] >= romsize || romsize - fields[0] < 2u)
+				goto external_invalid;
+			candidate->patch16[candidate->patch16_count].offset = fields[0];
+			candidate->patch16[candidate->patch16_count].value = (u16)fields[1];
+			candidate->patch16_count++;
+			continue;
+		}
+		if(!strncmp(line, "PATCH32=", 8))
+		{
+			u32 fields[2];
+			if(!in_variant || candidate->patch32_count >= AUTO_PATCH_MAX_PATCH32 ||
+				!AutoPatch_ParseHexFields(line + 8, fields, 2) || (fields[0] & 3u) != 0 ||
+				fields[0] >= romsize || romsize - fields[0] < 4u)
+				goto external_invalid;
+			candidate->patch32[candidate->patch32_count].offset = fields[0];
+			candidate->patch32[candidate->patch32_count].value = fields[1];
+			candidate->patch32_count++;
+			continue;
+		}
+		if(!strncmp(line, "TRIM=", 5))
+		{
+			u32 value;
+			if(!in_variant || candidate->trim_valid || !AutoPatch_ParseHex32(line + 5, &value) || value > romsize)
+				goto external_invalid;
+			candidate->trim_valid = 1;
+			candidate->trim_size = value;
+			continue;
+		}
+		if(!strncmp(line, "SEARCH32PAIR=", 13))
+		{
+			u32 fields[6];
+			AUTO_PATCH_SEARCH32PAIR *search;
+			if(!in_variant || candidate->search_count >= AUTO_PATCH_MAX_SEARCH32PAIR ||
+				!AutoPatch_ParseHexFields(line + 13, fields, 6))
+				goto external_invalid;
+			if((fields[0] & 3u) || (fields[1] & 3u) || fields[1] == 0 ||
+				(fields[4] & 3u) || fields[0] >= romsize || fields[1] > romsize - fields[0])
+				goto external_invalid;
+			search = &candidate->search[candidate->search_count++];
+			search->start = fields[0]; search->length = fields[1];
+			search->word0 = fields[2]; search->word1 = fields[3];
+			search->write_delta = fields[4]; search->replacement = fields[5];
+			continue;
+		}
+		if(!strcmp(line, "END"))
+		{
+			if(!in_variant || (irq_seen == 0 && !candidate->no_irq))
+				goto external_invalid;
+			if(candidate->no_irq || AutoPatch_VerifyIrqVariant(&gfile, candidate->irq_offsets,
+				candidate->irq_count, romsize))
+			{
+				f_close(&gfile);
+				memcpy(&g_auto_patch_profile, candidate, sizeof(g_auto_patch_profile));
+				g_auto_patch_status = AUTO_PATCH_EXTERNAL_MATCHED;
+				return g_auto_patch_status;
+			}
+			in_variant = 0;
+			variant_number = 0;
+			irq_seen = 0;
+			memset(candidate, 0, sizeof(*candidate));
+			continue;
+		}
+		goto external_invalid;
+	}
+
+	f_close(&gfile);
+	g_auto_patch_status = AUTO_PATCH_EXTERNAL_NO_MATCH;
+	return g_auto_patch_status;
+
+external_invalid:
+	f_close(&gfile);
+	memset(&g_auto_patch_profile, 0, sizeof(g_auto_patch_profile));
+	g_auto_patch_status = AUTO_PATCH_EXTERNAL_NO_MATCH;
+	return g_auto_patch_status;
+}
+
+u32 use_external_patch_engine(TCHAR* gamefilename, u8 gamecode[], u32 romsize)
+{
+	u32 requested_game_code = 0;
+	u32 index;
+	if(gamecode == NULL)
+		return AUTO_PATCH_EXTERNAL_MISSING;
+	memcpy(&requested_game_code, gamecode, 4);
+	if(g_auto_patch_prepared_game_code != requested_game_code || g_auto_patch_prepared_rom_size != romsize)
+		AutoPatch_PrepareProfile(gamefilename, gamecode, romsize);
+	if(g_auto_patch_status != AUTO_PATCH_EXTERNAL_MATCHED)
+		return g_auto_patch_status;
+
 	g_Offset = 0;
-	//
-	switch(*(u32*)GAMECODE)
-	{
-	case 0x4A4E4941://0414 - Initial D - Another Stage(JP)
-		Add2(0x11C/4, 0xE241100C);//sub r1,r1,0xC
-		break;
-	case 0x504D3941://0643 - Motoracer Advance(EU) OK
-		Add2(0x2608/4, 0xE5810FF4);
-		break;
-	case 0x455A5641://0826 - Super Bubble Pop(US)
-		Add2(0xDC/4, 0xE3A01A07);
-		Add2(0x147D8/4, 0xE58030F4);
-		break;
-	case 0x45533841://0854 - Digimon - Battle Spirit(US) OK
-		Add2(0x110/4, 0xE241100C);
-		break;
-	case 0x45523241://0911 Bratz(US)
-		Add2(0x28610/4, 0x39284939);
-		break;
-	case 0x454E3941://0913 - Piglet's Big Game(US)
-		Add2(0x97A8/4, 0xE5810FF4);
-		break;
-	case 0x50523241://1017 Bratz(EU)
-		Add2(0x28614/4, 0x39284939);
-		break;
-	case 0x50464C41://1056 - Dragon Ball Z - The Legacy of Goku II(EU)
-		Add2(0x211D8/4, 0x63484916);
-		break;
-	case 0x45464C41://1085 - Dragon Ball Z - The Legacy of Goku II(US)
-		Add2(0x20D28/4, 0x63484916);
-		break;
-	case 0x50533841://1133 - Digimon - Battle Spirit(EU)
-		Add2(0x110/4, 0xE241100C);
-		break;
-	case 0x584E3941://1178 - Piglet's Big Game(EU)
-		Add2(0x100/4, 0xE1A00000);
-		Add2(0x9834/4, 0xE5810FF4);
-		break;
-	case 0x45524E41://1260 - Cartoon Network - Speedway(US)
-		Add2(0x79B8/4, 0x63504A31);
-		break;
-	case 0x505A5641://1361 - Super Bubble Pop(EU)
-		Add2(0xDC/4, 0xE3A01A07);
-		Add2(0x14938/4, 0xE58030F4);
-		break;
-	case 0x454D5842://1534 - XS Moto(US)
-		Add2(0x7A7C/4, 0x63504A31);
-		break;
-	case 0x45474c41://0434 - Dragon Ball Z - The Legacy of Goku(US)
-		Add2(0x9A14/4, 0x3007FBC);
-		break;
-	case 0x4A464C41://1591 - Dragon Ball Z - The Legacy of Goku II International(JP)
-		Add2(0x22CA8/4, 0x63484916);
-		break;
-	case 0x45334742://1646 - Dragon Ball Z - Buu's Fury(US) OK
-		Add2(0x3F3DC/4, 0x63484916);
-		break;
-	case 0x45554642://1786 - Fear Factor - Unleashed(US)
-		Add2(0x2E20C/4, 0x4A576350);
-		break;
-	case 0x45574C42://1953 - LEGO Star Wars - The Video Game(UE)
-	case 0x4A574C42://2052 - LEGO Star Wars - The Video Game(JP)
-		Add2(0x14C/4, 0x03007FF0);
-		break;	
-	case 0x45345442://2079 - Dragon Ball GT - Transformation(US)
-		Add2(0x34FF8/4, 0x63484916);
-		break;
-	case 0x45455742://2151 - Whac-A-Mole(US)
-		Add2(0xBDAC/4, 0x49296348);
-		break;
-	case 0x45444342://2152 - Cinderella - Magical Dreams(US)
-		Add2(0xA7A8/4, 0x49266348);
-		break;
-	case 0x45363842://2242 - Hello Kitty - Happy Party Pals(US)
-		Add2(0x292BC/4, 0x63484916);
-		break;
-	case 0x50495742://2255 - Winx Club(EU)
-		Add2(0xB22C/4, 0x49296348);
-		break;
-	case 0x45495742://2301 - Winx Club(US)
-		Add2(0xB22C/4, 0x49296348);
-		break;
-	case 0x58363842://2305 - Hello Kitty - Happy Party Pals(EU)
-		Add2(0x2245C/4, 0x63484916);
-		break;
-	case 0x50444342://2430 - Cinderella - Magical Dreams(EU)
-		Add2(0xA7A8/4, 0x49296348);
-		break;
-	case 0x45545A42://2466 - VeggieTales - LarryBoy and the Bad Apple(US)
-		Add2(0xB448/4, 0x63514A31);
-		break;
-	case 0x45465542://2472 - 2 Games in 1 - Dragon Ball Z - Buu's Fury + Dragon Ball GT - Transformation(US)
-		Add2(0x307C/4, 0x63484916);
-		Add2(0x6FAA8/4, 0x63484916);
-		Add2(0x835244/4, 0x63484916);
-		break;
-	case 0x45364C42://2487 - My Little Pony - Crystal Princess - The Runaway Rainbow(US)
-		Add2(0x228B0/4, 0x63484916);
-		break;
-	case 0x45375442://2597 - Tonka - On the Job(US)
-		Add2(0x21548/4, 0x63484916);
-		break;
-	case 0x454D3941://2602 - Motoracer Advance(US)
-		Add2(0x2654/4, 0xE5810FF4);
-		break;
-	case 0x50363842://2627 - Hello Kitty - Happy Party Pals(EU)
-		Add2(0x292BC/4, 0x63484916);
-		break;
+	iCount2 = 0;
+	for(index = 0; index < g_auto_patch_profile.irq_count && index < EMax; index++)
+		Add2(g_auto_patch_profile.irq_offsets[index] / 4u, 0x03007FF4u);
+	return AUTO_PATCH_EXTERNAL_MATCHED;
+}
 
-		//one 0x3007FFC
-	case 0x45544641://0096 - F-14 Tomcat(UE)
-		Add2(0xE0/4, 0xE3A01A07);
-		break;
-	case 0x454D5041://0241 - Planet Monsters(US)
-		Add2(0x1421C/4, 0x494D6345);
-		break;
-	case 0x504D5041://0314 - Planet Monsters(EU)
-		Add2(0x1508C/4, 0x494D6345);
-		break;
-	case 0x50534341://0338 - Casper(EU)
-		Add2(0xAD64/4, 0x494D6345);
-		break;
-	case 0x50514B41://0500 - Kong - The Animated Series(EU)
-		Add2(0x13A0/4, 0x494D6345);
-		break;
-	case 0x50505641://0549 - V.I.P.(EU)
-		Add2(0x1374/4, 0x494D6345);
-		break;
-	case 0x45413541://0685 - Bionicle - Matoran Adventures(UE)
-		Add2(0x14B7C8/4, 0xE58320F4);
-		break;
-	case 0x50524941://0843 - Inspector Gadget Racing(EU)
-		Add2(0x158/4, 0xE3A00005);
-		break;
-	case 0x45514B41://1915 - Kong - The Animated Series(US)
-		Add2(0x13A0/4, 0x494D6345);
-		break;
-	case 0x45534341://2117 - Casper(US)
-		Add2(0xAD64/4, 0x494D6345);
-		break;
-	}
-}
-//------------------------------------------------------------------
-void Patch_SpecialROM_TrimSize(void)
+void AutoPatch_AppendDeferredRecords(void)
 {
-	switch(*(u32*)GAMECODE)
-	{
-	case 0x4A4D4F41://1058 - Disney Sports - Motocross(JP)
-	case 0x504D4F41://1068 - Disney Sports - Motocross(EU)
-		iTrimSize = 0xFE3000;
-		break;
-	case 0x4A494442://1176 - Koinu to Issho - Aijou Monogatari(JP)
-	case 0x4A324942://1741 - Koinu to Issho 2(JP)	
-	case 0x454A4142://1864 - Banjo Pilot(US)
-	case 0x504A4142://1899 - Banjo Pilot(EU)		
-	case 0x4A324D42://2045 - Momotarou Densetsu G - Gold Deck wo Tsukure!(JP)
-	case 0x4A464842://2071 - Twin Series 4 - Hamu Hamu Monster EX + F Puzzle Hamusuta(JP)		
-	case 0x50514442://2214 - Donkey Kong Country 3(EU)
-	case 0x45514442://2220 - Donkey Kong Country 3(US)	
-	case 0x4A514442://2270 - Super Donkey Kong Country 3(JP)	
-	case 0x4A564642://2286 - Twin Series 1 - Mezase Debut! Fashion Designer Monogatari + Kawaii Pet Game Gallery 2(JP)
-	case 0x4A575A42://2335 - Akagi(JP)
-	case 0x50385442://2342 - 2 Games in 1 - Teenage Mutant Ninja Turtles + Teenage Mutant Ninja Turtles 2 - Battle Nexus(EU)
-	case 0x50384E41://2351 - Tales of Phantasia(EU)
-	case 0x4A534842://2457 - Hamster Monogatari 3EX + 4 Special(JP)
-	case 0x45385442://2526 - 2 Games in 1 - Teenage Mutant Ninja Turtles + Teenage Mutant Ninja Turtles 2 - Battle Nexus(US)			
-		iTrimSize = 0xFE4000;
-		break;
-	case 0x45505342://1553 - Spider-Man 2(UE)
-	case 0x58505342://1565 - Spider-Man 2(EU)		
-	case 0x49505342://1657 - Spider-Man 2(IT).zip
-	case 0x45585142://2618 - Superman Returns - Fortress of Solitude(UE)
-		iTrimSize = 0xFE1000;
-		break;
-	case 0x44504C42://1815 - 2 Games in 1 - Disneys Konig der Lowen + Disneys Prinzessinnen(DE)
-		iTrimSize = 0x3A9FD0;
-		break;
-	case 0x46504C42://1827 - 2 Games in 1 - Roi Lion, Le + Disney Princesse(FR)
-		iTrimSize = 0x5ABF00;
-		break;
-	case 0x58424C42://1867 - 2 Games in 1 - Brother Bear + Lion King, The(EU)
-		iTrimSize = 0xFFB510;
-		break;
-	case 0x50413542://2053 - 2 Games in 1 - Spyro - Season of Ice + Crash Bandicoot 2 - N-Tranced(EU)
-		iTrimSize = 0x5E3CC0;
-		break;	
-	case 0x45533842://2394 - 2 Games in 1 - Spyro - Season of Ice + Spyro 2 - Season of Flame(US)
-		iTrimSize = 0x7CFF00;
-		break;		
-	case 0x46425742://2503 - 2 Games in 1 - Disney Princesse + Frere des Ours(FR) cant work
-		iTrimSize = 0x7FF000;
-		break;			
-	case 0x49425742://2703 - 2 Games in 1 - Disney Principesse + Koda, Fratello Orso(IT) cant work
-		iTrimSize = 0x7FEC30;
-		break;	
-	case 0x44425742://2009 - 2 Games in 1 - Disneys Prinzessinnen + Baren Bruder(DE)
-	case 0x53425742://2012 - 2 Games in 1 - Disney Princesas + Hermano Oso(ES)
-		iTrimSize = 0x731000;
-		break;
-	case 0x53434B42://2361 - Shin-chan - Aventuras en Cineland(ES)
-		iTrimSize = 0xAFF000;
-		break;
-	case 0x50504C42://2745 - 2 Games in 1 - Lion King, The + Disney Princess(EU)
-	case 0x50425742://2780 - 2 Games in 1 - Disney Princess + Brother Bear(EU)		
-		iTrimSize = 0x738000;
-		break;
-	}
+	u32 index;
+	if(g_auto_patch_status != AUTO_PATCH_EXTERNAL_MATCHED)
+		return;
+	for(index = 0; index < g_auto_patch_profile.add32_count; index++)
+		Add2(g_auto_patch_profile.add32[index].offset / 4u, g_auto_patch_profile.add32[index].value);
 }
-//------------------------------------------------------------------
-/*void Check_Fire_Emblem(void)
-{
-	u32 code1 = 0x47004800;
-	u32 address1[5];
-	u32 code2[5];
-	u32 patchaddress;
-	u32 Baseaddress=0x08000000;
-	u8* patchbuffer = (u8*)_UnusedVram ;
-	u8 * p_patch_start;
-	u8 * p_patch_end;
-	u8 * p_modify_address;
-	u32 modify_val=0;
-	 
-	u8 have=0;
-	
-	memset(address1,0x00,sizeof(address1));
-	switch(*(u32*)GAMECODE)
-	{
-		case 0x4A454641://0378 - Fire Emblem - Fuuin no Tsurugi(JP)
-		{
-			address1[0]=0x858B0;
-			address1[1]=0x85048;
-			address1[2]=0x84FF0;
-			address1[3]=0x85194;
-			address1[4]=0x850F8;
-			patchaddress=0x7FF100;
-			code2[0]=Baseaddress+patchaddress+0x1;
-			code2[1]=Baseaddress+patchaddress+0x17;
-			code2[2]=Baseaddress+patchaddress+0x27;
-			code2[3]=Baseaddress+patchaddress+0x35;
-			code2[4]=Baseaddress+patchaddress+0x47;
-		  p_patch_start = (u8*)Fire_Emblem_0378_patch_start;
-		  p_patch_end  	= (u8*)Fire_Emblem_0378_patch_end;
-		  have = 1;
-		}break;
-		case 0x4A384542://1692 - Fire Emblem - Seima no Kouseki(JP)
-		{
-			address1[0]=0xA9844;
-			address1[1]=0xA989C;
-			address1[2]=0xA99F8;
-			address1[3]=0xA9B14;
-			address1[4]=0xAA5D0;
-			patchaddress=0xF00000;
-			code2[0]=Baseaddress+patchaddress+0x1;
-			code2[1]=Baseaddress+patchaddress+0xF;
-			code2[2]=Baseaddress+patchaddress+0x1D;
-			code2[3]=Baseaddress+patchaddress+0x2D;
-			code2[4]=Baseaddress+patchaddress+0x3D;
-		  p_patch_start = (u8*)Fire_Emblem_1692_patch_start;
-		  p_patch_end  	= (u8*)Fire_Emblem_1692_patch_end;
-		  have = 1;				
-		}break;
-		case 0x4A374541://0979 - Fire Emblem - Rekka no Ken(JP)
-		{
-			address1[0]=0xA0FE0;
-			address1[1]=0xA1038;
-			address1[2]=0xA1178;
-			address1[3]=0xA1264;
-			address1[4]=0xA1BA8;
-			patchaddress=0xFFF900;
-			code2[0]=Baseaddress+patchaddress+0x1;
-			code2[1]=Baseaddress+patchaddress+0xF;
-			code2[2]=Baseaddress+patchaddress+0x1D;
-			code2[3]=Baseaddress+patchaddress+0x1D;
-			code2[4]=Baseaddress+patchaddress+0x2D;
-		  p_patch_start = (u8*)Fire_Emblem_A_patch_start;
-		  p_patch_end  	= (u8*)Fire_Emblem_A_patch_end;
-		  p_modify_address = (u8*)Modify_address_A;
-		  modify_val = 0x80B3DAF;
-		  have = 1;
-		}break;
-		case 0x45374541://1235 - Fire Emblem(US)
-		{
-			address1[0]=0xA0654;
-			address1[1]=0xA06AC;
-			address1[2]=0xA07EC;
-			address1[3]=0xA08D8;
-			address1[4]=0xA1214;
-			patchaddress=0xFFF900;
-			code2[0]=Baseaddress+patchaddress+0x1;
-			code2[1]=Baseaddress+patchaddress+0xF;
-			code2[2]=Baseaddress+patchaddress+0x1D;
-			code2[3]=Baseaddress+patchaddress+0x1D;
-			code2[4]=Baseaddress+patchaddress+0x2D;
-		  p_patch_start = (u8*)Fire_Emblem_A_patch_start;
-		  p_patch_end  	= (u8*)Fire_Emblem_A_patch_end;
-		  p_modify_address = (u8*)Modify_address_A;
-		  modify_val = 0x80B2F8B;
-		  have = 1;
-		}break;
-		case 0x58374541://1574 - Fire Emblem(EU)
-		{
-			address1[0]=0xA09C8;
-			address1[1]=0xA0A20;
-			address1[2]=0xA0B60;
-			address1[3]=0xA0C4C;
-			address1[4]=0xA1560;
-			patchaddress=0xFFF900;
-			code2[0]=Baseaddress+patchaddress+0x1;
-			code2[1]=Baseaddress+patchaddress+0xF;
-			code2[2]=Baseaddress+patchaddress+0x1D;
-			code2[3]=Baseaddress+patchaddress+0x1D;
-			code2[4]=Baseaddress+patchaddress+0x2D;
-		  p_patch_start = (u8*)Fire_Emblem_A_patch_start;
-		  p_patch_end  	= (u8*)Fire_Emblem_A_patch_end;
-		  p_modify_address = (u8*)Modify_address_A;
-		  modify_val = 0x80B3A57;
-		  have = 1;
-		}break;
-		case 0x59374541://1575 - Fire Emblem(EU)
-		{
-			address1[0]=0xA09CC;
-			address1[1]=0xA0A24;
-			address1[2]=0xA0B64;
-			address1[3]=0xA0C50;
-			address1[4]=0xA1564;
-			patchaddress=0xFFF900;
-			code2[0]=Baseaddress+patchaddress+0x1;
-			code2[1]=Baseaddress+patchaddress+0xF;
-			code2[2]=Baseaddress+patchaddress+0x1D;
-			code2[3]=Baseaddress+patchaddress+0x1D;
-			code2[4]=Baseaddress+patchaddress+0x2D;
-		  p_patch_start = (u8*)Fire_Emblem_A_patch_start;
-		  p_patch_end  	= (u8*)Fire_Emblem_A_patch_end;
-		  p_modify_address = (u8*)Modify_address_A;
-		  modify_val = 0x80B3A3B;
-		  have = 1;
-		}break;
-		case 0x45384542://1997 - Fire Emblem - The Sacred Stones(US)
-		{
-			address1[0]=0xA4E00;
-			address1[1]=0xA4E58;
-			address1[2]=0xA4FDC;
-			address1[3]=0xA50FC;
-			address1[4]=0xA5BB8;
-			patchaddress=0xFFF900;
-			code2[0]=Baseaddress+patchaddress+0x1;
-			code2[1]=Baseaddress+patchaddress+0xF;
-			code2[2]=Baseaddress+patchaddress+0x1D;
-			code2[3]=Baseaddress+patchaddress+0x1D;
-			code2[4]=Baseaddress+patchaddress+0x2D;
-		  p_patch_start = (u8*)Fire_Emblem_B_patch_start;
-		  p_patch_end  	= (u8*)Fire_Emblem_B_patch_end;
-		  p_modify_address = (u8*)Modify_address_B;
-		  modify_val = 0x80B5D6B;
-		  have = 1;
-		}break;
-		case 0x50384542://2215 - Fire Emblem - The Sacred Stones(EU)
-		{
-			address1[0]=0xA5738;
-			address1[1]=0xA5790;
-			address1[2]=0xA5914;
-			address1[3]=0xA5A34;
-			address1[4]=0xA64F0;
-			patchaddress=0x1FFDD00;
-			code2[0]=Baseaddress+patchaddress+0x1;
-			code2[1]=Baseaddress+patchaddress+0xF;
-			code2[2]=Baseaddress+patchaddress+0x1D;
-			code2[3]=Baseaddress+patchaddress+0x1D;
-			code2[4]=Baseaddress+patchaddress+0x2D;
-		  p_patch_start = (u8*)Fire_Emblem_B_patch_start;
-		  p_patch_end  	= (u8*)Fire_Emblem_B_patch_end;
-		  p_modify_address = (u8*)Modify_address_B;
-		  modify_val = 0x80B670F;
-		  have = 1;
-		}break;
-		case 0x43454641://Fire_Emblem_(Prototype,_iQue)
-		{
-			address1[0]=0x84FF0;
-			address1[1]=0x85048;
-			address1[2]=0x850F8;
-			address1[3]=0x85194;
-			address1[4]=0x858B0;
-			patchaddress=0xFFCC00;
-			code2[0]=Baseaddress+patchaddress+0x1;
-			code2[1]=Baseaddress+patchaddress+0xF;
-			code2[2]=Baseaddress+patchaddress+0x1F;
-			code2[3]=Baseaddress+patchaddress+0x2D;
-			code2[4]=Baseaddress+patchaddress+0x3D;
-		  p_patch_start = (u8*)Fire_Emblem_iQue_patch_start;
-		  p_patch_end  	= (u8*)Fire_Emblem_iQue_patch_end;
-		  //p_modify_address = (u8*)Modify_address_B;
-		  //modify_val = 0x80B670F;
-		  have = 1;
-		}break;
-	}
-	
-	if(have){
-    for(u32 i=0;i<5;i++)
-    {
-    	if(address1[i] != 0){
-    		Write(address1[i],(u8*)&code1 , 4); 
-      	Write(address1[i]+4,(u8*)&code2[i],4);
-      }
-    }			
 
-	  u32 copysize = p_patch_end - p_patch_start ;
-	  dmaCopy((void*)p_patch_start,patchbuffer, copysize);	
-	  if( modify_val)
-	  {
-	  	u32 p_modify_address_offset = p_modify_address-p_patch_start;
-	  	*(vu32*)(patchbuffer+p_modify_address_offset) = modify_val;
-	  } 		  
-	  Write(patchaddress, patchbuffer,copysize);
-	  Set_AUTO_save(0x00);
-	}
-	else{
-		Set_AUTO_save(0x01);
-	}	
-}
-*/
-//------------------------------------------------------------------
-void Patch_somegame(u32 *Data)
+void AutoPatch_ApplyTrimOverride(void)
 {
-	u32 size = 0x7FF0;
-	if( *(u32*)GAMECODE == 0x50424732 )
+	if(g_auto_patch_status == AUTO_PATCH_EXTERNAL_MATCHED && g_auto_patch_profile.trim_valid)
+		iTrimSize = g_auto_patch_profile.trim_size;
+}
+
+void AutoPatch_ApplyFixedWrites(void)
+{
+	u32 index;
+	if(g_auto_patch_status != AUTO_PATCH_EXTERNAL_MATCHED)
+		return;
+	for(index = 0; index < g_auto_patch_profile.patch16_count; index++)
 	{
-  	for(u32 ii=0;ii<0x100;ii++)
-  	{
-   	 if(0x3000000==Data[ii])
-    	{
-    		if(0x8000 ==Data[ii+1] )
-    		{
-    			Write((ii+1)*4,(u8*)&size,4 );
-    		}
-    	}
+		u16 value = g_auto_patch_profile.patch16[index].value;
+		Write(g_auto_patch_profile.patch16[index].offset, (const u8*)&value, sizeof(value));
+	}
+	for(index = 0; index < g_auto_patch_profile.patch32_count; index++)
+	{
+		u32 value = g_auto_patch_profile.patch32[index].value;
+		Write(g_auto_patch_profile.patch32[index].offset, (const u8*)&value, sizeof(value));
+	}
+}
+
+void AutoPatch_ApplySearchWrites(u32 *Data)
+{
+	u32 search_index;
+	if(g_auto_patch_status != AUTO_PATCH_EXTERNAL_MATCHED || Data == NULL)
+		return;
+	for(search_index = 0; search_index < g_auto_patch_profile.search_count; search_index++)
+	{
+		const AUTO_PATCH_SEARCH32PAIR *search = &g_auto_patch_profile.search[search_index];
+		u32 position;
+		for(position = search->start; position < search->start + search->length; position += 4u)
+		{
+			if(Data[position / 4u] == search->word0 && Data[position / 4u + 1u] == search->word1)
+			{
+				u32 value = search->replacement;
+				Write(position + search->write_delta, (const u8*)&value, sizeof(value));
+			}
 		}
 	}
 }
+

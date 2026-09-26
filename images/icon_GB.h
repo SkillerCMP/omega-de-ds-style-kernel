@@ -1,14 +1,14 @@
 
-//{{BLOCK(icon_GB)
+//{{BLOCK(gImage_icon_GB)
 
 //======================================================================
 //
-//	icon_GB, 16x14@16,
+//	gImage_icon_GB, 16x14@16, 
 //	+ bitmap not compressed
 //	Total size: 448 = 448
 //
-//	Time-stamp: 2018-11-05, 12:04:03
-//	Exported by Cearn's GBA Image Transmogrifier, v0.8.3
+//	Time-stamp: 2026-09-26, 00:57:36
+//	Exported by Cearn's GBA Image Transmogrifier, v0.8.6
 //	( http://www.coranac.com/projects/#grit )
 //
 //======================================================================
@@ -48,4 +48,4 @@ const unsigned short gImage_icon_GB[224] __attribute__((aligned(4)))=
 	0x4631,0x0C63,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,
 };
 
-//}}BLOCK(icon_GB)
+//}}BLOCK(gImage_icon_GB)

@@ -1,0 +1,1053 @@
+{
+  "deferred_add32": {
+    "A2RE": {
+      "add32": [
+        {
+          "offset": 165392,
+          "value": 958941497
+        }
+      ],
+      "source_comments": [
+        "0911 Bratz(US)"
+      ]
+    },
+    "A2RP": {
+      "add32": [
+        {
+          "offset": 165396,
+          "value": 958941497
+        }
+      ],
+      "source_comments": [
+        "1017 Bratz(EU)"
+      ]
+    },
+    "A5AE": {
+      "add32": [
+        {
+          "offset": 1357768,
+          "value": 3850576116
+        }
+      ],
+      "source_comments": [
+        "0685 - Bionicle - Matoran Adventures(UE)"
+      ]
+    },
+    "A8SE": {
+      "add32": [
+        {
+          "offset": 272,
+          "value": 3795914764
+        }
+      ],
+      "source_comments": [
+        "0854 - Digimon - Battle Spirit(US) OK"
+      ]
+    },
+    "A8SP": {
+      "add32": [
+        {
+          "offset": 272,
+          "value": 3795914764
+        }
+      ],
+      "source_comments": [
+        "1133 - Digimon - Battle Spirit(EU)"
+      ]
+    },
+    "A9ME": {
+      "add32": [
+        {
+          "offset": 9812,
+          "value": 3850440692
+        }
+      ],
+      "source_comments": [
+        "2602 - Motoracer Advance(US)"
+      ]
+    },
+    "A9MP": {
+      "add32": [
+        {
+          "offset": 9736,
+          "value": 3850440692
+        }
+      ],
+      "source_comments": [
+        "0643 - Motoracer Advance(EU) OK"
+      ]
+    },
+    "A9NE": {
+      "add32": [
+        {
+          "offset": 38824,
+          "value": 3850440692
+        }
+      ],
+      "source_comments": [
+        "0913 - Piglet's Big Game(US)"
+      ]
+    },
+    "A9NX": {
+      "add32": [
+        {
+          "offset": 256,
+          "value": 3785359360
+        },
+        {
+          "offset": 38964,
+          "value": 3850440692
+        }
+      ],
+      "source_comments": [
+        "1178 - Piglet's Big Game(EU)"
+      ]
+    },
+    "ACSE": {
+      "add32": [
+        {
+          "offset": 44388,
+          "value": 1229808453
+        }
+      ],
+      "source_comments": [
+        "2117 - Casper(US)"
+      ]
+    },
+    "ACSP": {
+      "add32": [
+        {
+          "offset": 44388,
+          "value": 1229808453
+        }
+      ],
+      "source_comments": [
+        "0338 - Casper(EU)"
+      ]
+    },
+    "AFTE": {
+      "add32": [
+        {
+          "offset": 224,
+          "value": 3818920455
+        }
+      ],
+      "source_comments": [
+        "0096 - F-14 Tomcat(UE)"
+      ]
+    },
+    "AINJ": {
+      "add32": [
+        {
+          "offset": 284,
+          "value": 3795914764
+        }
+      ],
+      "source_comments": [
+        "0414 - Initial D - Another Stage(JP)"
+      ]
+    },
+    "AIRP": {
+      "add32": [
+        {
+          "offset": 344,
+          "value": 3818913797
+        }
+      ],
+      "source_comments": [
+        "0843 - Inspector Gadget Racing(EU)"
+      ]
+    },
+    "AKQE": {
+      "add32": [
+        {
+          "offset": 5024,
+          "value": 1229808453
+        }
+      ],
+      "source_comments": [
+        "1915 - Kong - The Animated Series(US)"
+      ]
+    },
+    "AKQP": {
+      "add32": [
+        {
+          "offset": 5024,
+          "value": 1229808453
+        }
+      ],
+      "source_comments": [
+        "0500 - Kong - The Animated Series(EU)"
+      ]
+    },
+    "ALFE": {
+      "add32": [
+        {
+          "offset": 134440,
+          "value": 1665681686
+        }
+      ],
+      "source_comments": [
+        "1085 - Dragon Ball Z - The Legacy of Goku II(US)"
+      ]
+    },
+    "ALFJ": {
+      "add32": [
+        {
+          "offset": 142504,
+          "value": 1665681686
+        }
+      ],
+      "source_comments": [
+        "1591 - Dragon Ball Z - The Legacy of Goku II International(JP)"
+      ]
+    },
+    "ALFP": {
+      "add32": [
+        {
+          "offset": 135640,
+          "value": 1665681686
+        }
+      ],
+      "source_comments": [
+        "1056 - Dragon Ball Z - The Legacy of Goku II(EU)"
+      ]
+    },
+    "ALGE": {
+      "add32": [
+        {
+          "offset": 39444,
+          "value": 50364348
+        }
+      ],
+      "source_comments": [
+        "0434 - Dragon Ball Z - The Legacy of Goku(US)"
+      ]
+    },
+    "ANRE": {
+      "add32": [
+        {
+          "offset": 31160,
+          "value": 1666206257
+        }
+      ],
+      "source_comments": [
+        "1260 - Cartoon Network - Speedway(US)"
+      ]
+    },
+    "APME": {
+      "add32": [
+        {
+          "offset": 82460,
+          "value": 1229808453
+        }
+      ],
+      "source_comments": [
+        "0241 - Planet Monsters(US)"
+      ]
+    },
+    "APMP": {
+      "add32": [
+        {
+          "offset": 86156,
+          "value": 1229808453
+        }
+      ],
+      "source_comments": [
+        "0314 - Planet Monsters(EU)"
+      ]
+    },
+    "AVPP": {
+      "add32": [
+        {
+          "offset": 4980,
+          "value": 1229808453
+        }
+      ],
+      "source_comments": [
+        "0549 - V.I.P.(EU)"
+      ]
+    },
+    "AVZE": {
+      "add32": [
+        {
+          "offset": 220,
+          "value": 3818920455
+        },
+        {
+          "offset": 83928,
+          "value": 3850383604
+        }
+      ],
+      "source_comments": [
+        "0826 - Super Bubble Pop(US)"
+      ]
+    },
+    "AVZP": {
+      "add32": [
+        {
+          "offset": 220,
+          "value": 3818920455
+        },
+        {
+          "offset": 84280,
+          "value": 3850383604
+        }
+      ],
+      "source_comments": [
+        "1361 - Super Bubble Pop(EU)"
+      ]
+    },
+    "B86E": {
+      "add32": [
+        {
+          "offset": 168636,
+          "value": 1665681686
+        }
+      ],
+      "source_comments": [
+        "2242 - Hello Kitty - Happy Party Pals(US)"
+      ]
+    },
+    "B86P": {
+      "add32": [
+        {
+          "offset": 168636,
+          "value": 1665681686
+        }
+      ],
+      "source_comments": [
+        "2627 - Hello Kitty - Happy Party Pals(EU)"
+      ]
+    },
+    "B86X": {
+      "add32": [
+        {
+          "offset": 140380,
+          "value": 1665681686
+        }
+      ],
+      "source_comments": [
+        "2305 - Hello Kitty - Happy Party Pals(EU)"
+      ]
+    },
+    "BCDE": {
+      "add32": [
+        {
+          "offset": 42920,
+          "value": 1227252552
+        }
+      ],
+      "source_comments": [
+        "2152 - Cinderella - Magical Dreams(US)"
+      ]
+    },
+    "BCDP": {
+      "add32": [
+        {
+          "offset": 42920,
+          "value": 1227449160
+        }
+      ],
+      "source_comments": [
+        "2430 - Cinderella - Magical Dreams(EU)"
+      ]
+    },
+    "BFUE": {
+      "add32": [
+        {
+          "offset": 188940,
+          "value": 1247241040
+        }
+      ],
+      "source_comments": [
+        "1786 - Fear Factor - Unleashed(US)"
+      ]
+    },
+    "BG3E": {
+      "add32": [
+        {
+          "offset": 259036,
+          "value": 1665681686
+        }
+      ],
+      "source_comments": [
+        "1646 - Dragon Ball Z - Buu's Fury(US) OK"
+      ]
+    },
+    "BL6E": {
+      "add32": [
+        {
+          "offset": 141488,
+          "value": 1665681686
+        }
+      ],
+      "source_comments": [
+        "2487 - My Little Pony - Crystal Princess - The Runaway Rainbow(US)"
+      ]
+    },
+    "BLWE": {
+      "add32": [
+        {
+          "offset": 332,
+          "value": 50364400
+        }
+      ],
+      "source_comments": [
+        "1953 - LEGO Star Wars - The Video Game(UE)"
+      ]
+    },
+    "BLWJ": {
+      "add32": [
+        {
+          "offset": 332,
+          "value": 50364400
+        }
+      ],
+      "source_comments": [
+        "2052 - LEGO Star Wars - The Video Game(JP)"
+      ]
+    },
+    "BT4E": {
+      "add32": [
+        {
+          "offset": 217080,
+          "value": 1665681686
+        }
+      ],
+      "source_comments": [
+        "2079 - Dragon Ball GT - Transformation(US)"
+      ]
+    },
+    "BT7E": {
+      "add32": [
+        {
+          "offset": 136520,
+          "value": 1665681686
+        }
+      ],
+      "source_comments": [
+        "2597 - Tonka - On the Job(US)"
+      ]
+    },
+    "BUFE": {
+      "add32": [
+        {
+          "offset": 12412,
+          "value": 1665681686
+        },
+        {
+          "offset": 457384,
+          "value": 1665681686
+        },
+        {
+          "offset": 8606276,
+          "value": 1665681686
+        }
+      ],
+      "source_comments": [
+        "2472 - 2 Games in 1 - Dragon Ball Z - Buu's Fury + Dragon Ball GT - Transformation(US)"
+      ]
+    },
+    "BWEE": {
+      "add32": [
+        {
+          "offset": 48556,
+          "value": 1227449160
+        }
+      ],
+      "source_comments": [
+        "2151 - Whac-A-Mole(US)"
+      ]
+    },
+    "BWIE": {
+      "add32": [
+        {
+          "offset": 45612,
+          "value": 1227449160
+        }
+      ],
+      "source_comments": [
+        "2301 - Winx Club(US)"
+      ]
+    },
+    "BWIP": {
+      "add32": [
+        {
+          "offset": 45612,
+          "value": 1227449160
+        }
+      ],
+      "source_comments": [
+        "2255 - Winx Club(EU)"
+      ]
+    },
+    "BXME": {
+      "add32": [
+        {
+          "offset": 31356,
+          "value": 1666206257
+        }
+      ],
+      "source_comments": [
+        "1534 - XS Moto(US)"
+      ]
+    },
+    "BZTE": {
+      "add32": [
+        {
+          "offset": 46152,
+          "value": 1666271793
+        }
+      ],
+      "source_comments": [
+        "2466 - VeggieTales - LarryBoy and the Bad Apple(US)"
+      ]
+    }
+  },
+  "derived_from": "source/GBApatch.c in 13.7e3",
+  "direct16": {
+    "A2YE": [
+      {
+        "offset": 559126,
+        "value": 13313
+      },
+      {
+        "offset": 559124,
+        "value": 18112
+      },
+      {
+        "offset": 559410,
+        "value": 18112
+      },
+      {
+        "offset": 559416,
+        "value": 18112
+      },
+      {
+        "offset": 559420,
+        "value": 18112
+      },
+      {
+        "offset": 559484,
+        "value": 18112
+      },
+      {
+        "offset": 559490,
+        "value": 18112
+      },
+      {
+        "offset": 559494,
+        "value": 18112
+      },
+      {
+        "offset": 559496,
+        "value": 18112
+      }
+    ],
+    "ALFE": [
+      {
+        "offset": 3903134,
+        "value": 4097
+      }
+    ],
+    "ALFJ": [
+      {
+        "offset": 4180214,
+        "value": 4097
+      }
+    ],
+    "ALFP": [
+      {
+        "offset": 7291570,
+        "value": 4097
+      }
+    ],
+    "ALGE": [
+      {
+        "offset": 854,
+        "value": 0
+      },
+      {
+        "offset": 862,
+        "value": 0
+      },
+      {
+        "offset": 894,
+        "value": 0
+      },
+      {
+        "offset": 898,
+        "value": 0
+      }
+    ],
+    "ALGP": [
+      {
+        "offset": 828,
+        "value": 18112
+      },
+      {
+        "offset": 832,
+        "value": 18112
+      },
+      {
+        "offset": 854,
+        "value": 18112
+      },
+      {
+        "offset": 858,
+        "value": 18112
+      },
+      {
+        "offset": 862,
+        "value": 18112
+      },
+      {
+        "offset": 900,
+        "value": 18112
+      },
+      {
+        "offset": 904,
+        "value": 18112
+      },
+      {
+        "offset": 18764,
+        "value": 18112
+      },
+      {
+        "offset": 18768,
+        "value": 18112
+      },
+      {
+        "offset": 18808,
+        "value": 18112
+      },
+      {
+        "offset": 18812,
+        "value": 18112
+      },
+      {
+        "offset": 39310,
+        "value": 18112
+      },
+      {
+        "offset": 39314,
+        "value": 18112
+      }
+    ],
+    "BLFE": [
+      {
+        "offset": 262998,
+        "value": 0
+      },
+      {
+        "offset": 263006,
+        "value": 0
+      },
+      {
+        "offset": 263038,
+        "value": 0
+      },
+      {
+        "offset": 263042,
+        "value": 0
+      },
+      {
+        "offset": 12292118,
+        "value": 4097
+      }
+    ]
+  },
+  "disabled_fire_emblem": {
+    "AE7E": {
+      "blob": "Fire_Emblem_A",
+      "code2_deltas": [
+        1,
+        15,
+        29,
+        29,
+        45
+      ],
+      "hooks": [
+        656980,
+        657068,
+        657388,
+        657624,
+        659988
+      ],
+      "modify": 134950795,
+      "patchaddress": 16775424,
+      "title": "1235 - Fire Emblem (US)"
+    },
+    "AE7J": {
+      "blob": "Fire_Emblem_A",
+      "code2_deltas": [
+        1,
+        15,
+        29,
+        29,
+        45
+      ],
+      "hooks": [
+        659424,
+        659512,
+        659832,
+        660068,
+        662440
+      ],
+      "modify": 134954415,
+      "patchaddress": 16775424,
+      "title": "0979 - Fire Emblem - Rekka no Ken (JP)"
+    },
+    "AE7X": {
+      "blob": "Fire_Emblem_A",
+      "code2_deltas": [
+        1,
+        15,
+        29,
+        29,
+        45
+      ],
+      "hooks": [
+        657864,
+        657952,
+        658272,
+        658508,
+        660832
+      ],
+      "modify": 134953559,
+      "patchaddress": 16775424,
+      "title": "1574 - Fire Emblem (EU)"
+    },
+    "AE7Y": {
+      "blob": "Fire_Emblem_A",
+      "code2_deltas": [
+        1,
+        15,
+        29,
+        29,
+        45
+      ],
+      "hooks": [
+        657868,
+        657956,
+        658276,
+        658512,
+        660836
+      ],
+      "modify": 134953531,
+      "patchaddress": 16775424,
+      "title": "1575 - Fire Emblem (EU)"
+    },
+    "AFEC": {
+      "blob": "Fire_Emblem_iQue",
+      "code2_deltas": [
+        1,
+        15,
+        31,
+        45,
+        61
+      ],
+      "hooks": [
+        544752,
+        544840,
+        545016,
+        545172,
+        546992
+      ],
+      "patchaddress": 16763904,
+      "title": "Fire Emblem Prototype / iQue"
+    },
+    "AFEJ": {
+      "blob": "Fire_Emblem_0378",
+      "code2_deltas": [
+        1,
+        23,
+        39,
+        53,
+        71
+      ],
+      "hooks": [
+        546992,
+        544840,
+        544752,
+        545172,
+        545016
+      ],
+      "patchaddress": 8384768,
+      "title": "0378 - Fire Emblem - Fuuin no Tsurugi (JP)"
+    },
+    "BE8E": {
+      "blob": "Fire_Emblem_B",
+      "code2_deltas": [
+        1,
+        15,
+        29,
+        29,
+        45
+      ],
+      "hooks": [
+        675328,
+        675416,
+        675804,
+        676092,
+        678840
+      ],
+      "modify": 134962539,
+      "patchaddress": 16775424,
+      "title": "1997 - Fire Emblem - The Sacred Stones (US)"
+    },
+    "BE8J": {
+      "blob": "Fire_Emblem_1692",
+      "code2_deltas": [
+        1,
+        15,
+        29,
+        45,
+        61
+      ],
+      "hooks": [
+        694340,
+        694428,
+        694776,
+        695060,
+        697808
+      ],
+      "patchaddress": 15728640,
+      "title": "1692 - Fire Emblem - Seima no Kouseki (JP)"
+    },
+    "BE8P": {
+      "blob": "Fire_Emblem_B",
+      "code2_deltas": [
+        1,
+        15,
+        29,
+        29,
+        45
+      ],
+      "hooks": [
+        677688,
+        677776,
+        678164,
+        678452,
+        681200
+      ],
+      "modify": 134965007,
+      "patchaddress": 33545472,
+      "title": "2215 - Fire Emblem - The Sacred Stones (EU)"
+    }
+  },
+  "format": 2,
+  "search32pair": {
+    "2GBP": [
+      {
+        "length": 1024,
+        "replacement": 32752,
+        "start": 0,
+        "word0": 50331648,
+        "word1": 32768,
+        "write_delta": 4
+      }
+    ]
+  },
+  "trim": {
+    "AN8P": {
+      "source_comments": [
+        "2351 - Tales of Phantasia(EU)"
+      ],
+      "trim": 16662528
+    },
+    "AOMJ": {
+      "source_comments": [
+        "1058 - Disney Sports - Motocross(JP)"
+      ],
+      "trim": 16658432
+    },
+    "AOMP": {
+      "source_comments": [
+        "1068 - Disney Sports - Motocross(EU)"
+      ],
+      "trim": 16658432
+    },
+    "B5AP": {
+      "source_comments": [
+        "2053 - 2 Games in 1 - Spyro - Season of Ice + Crash Bandicoot 2 - N-Tranced(EU)"
+      ],
+      "trim": 6175936
+    },
+    "B8SE": {
+      "source_comments": [
+        "2394 - 2 Games in 1 - Spyro - Season of Ice + Spyro 2 - Season of Flame(US)"
+      ],
+      "trim": 8191744
+    },
+    "BAJE": {
+      "source_comments": [
+        "1864 - Banjo Pilot(US)"
+      ],
+      "trim": 16662528
+    },
+    "BAJP": {
+      "source_comments": [
+        "1899 - Banjo Pilot(EU)"
+      ],
+      "trim": 16662528
+    },
+    "BDIJ": {
+      "source_comments": [
+        "1176 - Koinu to Issho - Aijou Monogatari(JP)"
+      ],
+      "trim": 16662528
+    },
+    "BDQE": {
+      "source_comments": [
+        "2220 - Donkey Kong Country 3(US)"
+      ],
+      "trim": 16662528
+    },
+    "BDQJ": {
+      "source_comments": [
+        "2270 - Super Donkey Kong Country 3(JP)"
+      ],
+      "trim": 16662528
+    },
+    "BDQP": {
+      "source_comments": [
+        "2214 - Donkey Kong Country 3(EU)"
+      ],
+      "trim": 16662528
+    },
+    "BFVJ": {
+      "source_comments": [
+        "2286 - Twin Series 1 - Mezase Debut! Fashion Designer Monogatari + Kawaii Pet Game Gallery 2(JP)"
+      ],
+      "trim": 16662528
+    },
+    "BHFJ": {
+      "source_comments": [
+        "2071 - Twin Series 4 - Hamu Hamu Monster EX + F Puzzle Hamusuta(JP)"
+      ],
+      "trim": 16662528
+    },
+    "BHSJ": {
+      "source_comments": [
+        "2457 - Hamster Monogatari 3EX + 4 Special(JP)"
+      ],
+      "trim": 16662528
+    },
+    "BI2J": {
+      "source_comments": [
+        "1741 - Koinu to Issho 2(JP)"
+      ],
+      "trim": 16662528
+    },
+    "BKCS": {
+      "source_comments": [
+        "2361 - Shin-chan - Aventuras en Cineland(ES)"
+      ],
+      "trim": 11530240
+    },
+    "BLBX": {
+      "source_comments": [
+        "1867 - 2 Games in 1 - Brother Bear + Lion King, The(EU)"
+      ],
+      "trim": 16758032
+    },
+    "BLPD": {
+      "source_comments": [
+        "1815 - 2 Games in 1 - Disneys Konig der Lowen + Disneys Prinzessinnen(DE)"
+      ],
+      "trim": 3842000
+    },
+    "BLPF": {
+      "source_comments": [
+        "1827 - 2 Games in 1 - Roi Lion, Le + Disney Princesse(FR)"
+      ],
+      "trim": 5947136
+    },
+    "BLPP": {
+      "source_comments": [
+        "2745 - 2 Games in 1 - Lion King, The + Disney Princess(EU)"
+      ],
+      "trim": 7569408
+    },
+    "BM2J": {
+      "source_comments": [
+        "2045 - Momotarou Densetsu G - Gold Deck wo Tsukure!(JP)"
+      ],
+      "trim": 16662528
+    },
+    "BQXE": {
+      "source_comments": [
+        "2618 - Superman Returns - Fortress of Solitude(UE)"
+      ],
+      "trim": 16650240
+    },
+    "BSPE": {
+      "source_comments": [
+        "1553 - Spider-Man 2(UE)"
+      ],
+      "trim": 16650240
+    },
+    "BSPI": {
+      "source_comments": [
+        "1657 - Spider-Man 2(IT).zip"
+      ],
+      "trim": 16650240
+    },
+    "BSPX": {
+      "source_comments": [
+        "1565 - Spider-Man 2(EU)"
+      ],
+      "trim": 16650240
+    },
+    "BT8E": {
+      "source_comments": [
+        "2526 - 2 Games in 1 - Teenage Mutant Ninja Turtles + Teenage Mutant Ninja Turtles 2 - Battle Nexus(US)"
+      ],
+      "trim": 16662528
+    },
+    "BT8P": {
+      "source_comments": [
+        "2342 - 2 Games in 1 - Teenage Mutant Ninja Turtles + Teenage Mutant Ninja Turtles 2 - Battle Nexus(EU)"
+      ],
+      "trim": 16662528
+    },
+    "BWBD": {
+      "source_comments": [
+        "2009 - 2 Games in 1 - Disneys Prinzessinnen + Baren Bruder(DE)"
+      ],
+      "trim": 7540736
+    },
+    "BWBF": {
+      "source_comments": [
+        "2503 - 2 Games in 1 - Disney Princesse + Frere des Ours(FR) cant work"
+      ],
+      "trim": 8384512
+    },
+    "BWBI": {
+      "source_comments": [
+        "2703 - 2 Games in 1 - Disney Principesse + Koda, Fratello Orso(IT) cant work"
+      ],
+      "trim": 8383536
+    },
+    "BWBP": {
+      "source_comments": [
+        "2780 - 2 Games in 1 - Disney Princess + Brother Bear(EU)"
+      ],
+      "trim": 7569408
+    },
+    "BWBS": {
+      "source_comments": [
+        "2012 - 2 Games in 1 - Disney Princesas + Hermano Oso(ES)"
+      ],
+      "trim": 7540736
+    },
+    "BZWJ": {
+      "source_comments": [
+        "2335 - Akagi(JP)"
+      ],
+      "trim": 16662528
+    }
+  }
+}

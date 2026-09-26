@@ -57,14 +57,9 @@ extern void CheckSwitch(void);
 static void Draw_set2_button(u32 offsety, u32 highlighted, u32 is_ok)
 {
 	u16 clean_color = highlighted ? gl_color_btn_clean : gl_color_MENU_btn;
-	char msg[32];
 
 	Clear(202,offsety-2,30,14,clean_color,1);
-	if(is_ok)
-		sprintf(msg,"%s",gl_ok_btn);
-	else
-		sprintf(msg,"%s",gl_set_btn);
-	DrawHZText12(msg,0,205,offsety,gl_color_text,1);
+	DrawHZText12(is_ok ? gl_ok_btn : gl_set_btn,0,205,offsety,gl_color_text,1);
 }
 
 u32 Setting_window2(void)
@@ -75,13 +70,12 @@ u32 Setting_window2(void)
 	u32 Set_OK=0;
 	u32 Set_OK_line=0;
 	u32 currstate=0;
-	char msg[128];
 	u32 re_show=1;
 	u32 full_redraw = 1;
 	u16 prev_led_open_sel = 0xFFFF;
 	u32 main_row_y[7];
 
-	u8 line_total;
+	u32 line_total;
 	u8 auto_save_pos = 1;
 	u8 resume_last_pos = 1;
 	u8 boot_mode_pos = 3;
@@ -159,94 +153,62 @@ u32 Setting_window2(void)
 
 			line_total = 7;
 
-			sprintf(msg,"%s",gl_save);
-			DrawHZText12(msg,0,set_offset,main_row_y[0],gl_color_selected,1);
+			DrawHZText12(gl_save,0,set_offset,main_row_y[0],gl_color_selected,1);
 			Draw_select_icon(x_offset,main_row_y[0],(auto_save_sel == 0x1));
-			sprintf(msg,"%s",gl_auto_save);
-			DrawHZText12(msg,0,x_offset+15,main_row_y[0],(auto_save_pos==0)?gl_color_selected:gl_color_text,1);
+			DrawHZText12(gl_auto_save,0,x_offset+15,main_row_y[0],(auto_save_pos==0)?gl_color_selected:gl_color_text,1);
 
-			sprintf(msg,"%s"," Remember");
-			DrawHZText12(msg,0,set_offset,main_row_y[1],gl_color_selected,1);
+			DrawHZText12(" Remember",0,set_offset,main_row_y[1],gl_color_selected,1);
 			Draw_select_icon(x_offset,main_row_y[1],(resume_last_on == 0x1));
-			if(resume_last_on)
-				sprintf(msg,"%s",gl_enabled);
-			else
-				sprintf(msg,"%s",gl_disabled);
-			DrawHZText12(msg,0,x_offset+15,main_row_y[1],(resume_last_pos==0)?gl_color_selected:gl_color_text,1);
+			DrawHZText12(resume_last_on ? gl_enabled : gl_disabled,
+				0,x_offset+15,main_row_y[1],(resume_last_pos==0)?gl_color_selected:gl_color_text,1);
 
-			sprintf(msg,"%s","Boot Mode");
-			DrawHZText12(msg,0,set_offset,main_row_y[2],gl_color_selected,1);
+			DrawHZText12("Boot Mode",0,set_offset,main_row_y[2],gl_color_selected,1);
 			Draw_select_icon(x_offset,main_row_y[2],(boot_mode_pref == 0x0));
-			sprintf(msg,"%s","Menu");
-			DrawHZText12(msg,0,x_offset+15,main_row_y[2],(boot_mode_pos==0)?gl_color_selected:gl_color_text,1);
+			DrawHZText12("Menu",0,x_offset+15,main_row_y[2],(boot_mode_pos==0)?gl_color_selected:gl_color_text,1);
 			Draw_select_icon(x_offset+8*6,main_row_y[2],(boot_mode_pref == 0x1));
-			sprintf(msg,"%s","Clean");
-			DrawHZText12(msg,0,x_offset+8*6+15,main_row_y[2],(boot_mode_pos==1)?gl_color_selected:gl_color_text,1);
+			DrawHZText12("Clean",0,x_offset+8*6+15,main_row_y[2],(boot_mode_pos==1)?gl_color_selected:gl_color_text,1);
 			Draw_select_icon(x_offset+16*6,main_row_y[2],(boot_mode_pref == 0x2));
-			sprintf(msg,"%s","Addon");
-			DrawHZText12(msg,0,x_offset+16*6+15,main_row_y[2],(boot_mode_pos==2)?gl_color_selected:gl_color_text,1);
+			DrawHZText12("Addon",0,x_offset+16*6+15,main_row_y[2],(boot_mode_pos==2)?gl_color_selected:gl_color_text,1);
 
-			sprintf(msg,"%s",gl_modeB_INITstr);
-			DrawHZText12(msg,0,set_offset,main_row_y[3],gl_color_selected,1);
+			DrawHZText12(gl_modeB_INITstr,0,set_offset,main_row_y[3],gl_color_selected,1);
 			Draw_select_icon(x_offset,main_row_y[3],(ModeB_INIT == 0x0));
-			sprintf(msg,"%s",gl_modeB_RUMBLE);
-			DrawHZText12(msg,0,x_offset+15,main_row_y[3],(ModeB_pos==0)?gl_color_selected:gl_color_text,1);
+			DrawHZText12(gl_modeB_RUMBLE,0,x_offset+15,main_row_y[3],(ModeB_pos==0)?gl_color_selected:gl_color_text,1);
 			Draw_select_icon(x_offset+9*6,main_row_y[3],(ModeB_INIT == 0x1));
-			sprintf(msg,"%s",gl_modeB_RAM);
-			DrawHZText12(msg,0,x_offset+9*6+15,main_row_y[3],(ModeB_pos==1)?gl_color_selected:gl_color_text,1);
+			DrawHZText12(gl_modeB_RAM,0,x_offset+9*6+15,main_row_y[3],(ModeB_pos==1)?gl_color_selected:gl_color_text,1);
 			Draw_select_icon(x_offset+17*6,main_row_y[3],(ModeB_INIT == 0x2));
-			sprintf(msg,"%s",gl_modeB_LINK);
-			DrawHZText12(msg,0,x_offset+17*6+15,main_row_y[3],(ModeB_pos==2)?gl_color_selected:gl_color_text,1);
+			DrawHZText12(gl_modeB_LINK,0,x_offset+17*6+15,main_row_y[3],(ModeB_pos==2)?gl_color_selected:gl_color_text,1);
 
-			sprintf(msg,"%s",gl_led);
-			DrawHZText12(msg,0,set_offset,main_row_y[4],gl_color_selected,1);
+			DrawHZText12(gl_led,0,set_offset,main_row_y[4],gl_color_selected,1);
 			Draw_select_icon(x_offset,main_row_y[4],(led_open_sel == 0x1));
-			sprintf(msg,"%s",gl_led_open);
-			DrawHZText12(msg,0,x_offset+15,main_row_y[4],(led_pos==0)?gl_color_selected:gl_color_text,1);
+			DrawHZText12(gl_led_open,0,x_offset+15,main_row_y[4],(led_pos==0)?gl_color_selected:gl_color_text,1);
 
 			if(led_open_sel == 0x1){
-				sprintf(msg,"%s",gl_Breathing_light);
-				DrawHZText12(msg,0,set_offset,led_sub1_y,gl_color_selected,1);
+				DrawHZText12(gl_Breathing_light,0,set_offset,led_sub1_y,gl_color_selected,1);
 				Draw_select_icon(x_offset,led_sub1_y,(Breathing_R == 0x1));
-				sprintf(msg,"%s","R");
-				DrawHZText12(msg,0,x_offset+15,led_sub1_y,(led_pos==2)?gl_color_selected:gl_color_text,1);
+				DrawHZText12("R",0,x_offset+15,led_sub1_y,(led_pos==2)?gl_color_selected:gl_color_text,1);
 				Draw_select_icon(x_offset+5*6+15,led_sub1_y,(Breathing_G == 0x1));
-				sprintf(msg,"%s","G");
-				DrawHZText12(msg,0,x_offset+5*6+15+15,led_sub1_y,(led_pos==3)?gl_color_selected:gl_color_text,1);
+				DrawHZText12("G",0,x_offset+5*6+15+15,led_sub1_y,(led_pos==3)?gl_color_selected:gl_color_text,1);
 				Draw_select_icon(x_offset+5*6+5*6+15+15,led_sub1_y,(Breathing_B == 0x1));
-				sprintf(msg,"%s","B");
-				DrawHZText12(msg,0,x_offset+5*6+5*6+15+15+15,led_sub1_y,(led_pos==4)?gl_color_selected:gl_color_text,1);
+				DrawHZText12("B",0,x_offset+5*6+5*6+15+15+15,led_sub1_y,(led_pos==4)?gl_color_selected:gl_color_text,1);
 
-				sprintf(msg,"%s",gl_SD_working);
-				DrawHZText12(msg,0,set_offset,led_sub2_y,gl_color_selected,1);
+				DrawHZText12(gl_SD_working,0,set_offset,led_sub2_y,gl_color_selected,1);
 				Draw_select_icon(x_offset,led_sub2_y,(SD_R == 0x1));
-				sprintf(msg,"%s","R");
-				DrawHZText12(msg,0,x_offset+15,led_sub2_y,(led_pos==5)?gl_color_selected:gl_color_text,1);
+				DrawHZText12("R",0,x_offset+15,led_sub2_y,(led_pos==5)?gl_color_selected:gl_color_text,1);
 				Draw_select_icon(x_offset+5*6+15,led_sub2_y,(SD_G == 0x1));
-				sprintf(msg,"%s","G");
-				DrawHZText12(msg,0,x_offset+5*6+15+15,led_sub2_y,(led_pos==6)?gl_color_selected:gl_color_text,1);
+				DrawHZText12("G",0,x_offset+5*6+15+15,led_sub2_y,(led_pos==6)?gl_color_selected:gl_color_text,1);
 				Draw_select_icon(x_offset+5*6+5*6+15+15,led_sub2_y,(SD_B == 0x1));
-				sprintf(msg,"%s","B");
-				DrawHZText12(msg,0,x_offset+5*6+5*6+15+15+15,led_sub2_y,(led_pos==7)?gl_color_selected:gl_color_text,1);
+				DrawHZText12("B",0,x_offset+5*6+5*6+15+15+15,led_sub2_y,(led_pos==7)?gl_color_selected:gl_color_text,1);
 			}
 
-			sprintf(msg,"%s",gl_lang_toggle_reset);
-			DrawHZText12(msg,0,set_offset,main_row_y[5],gl_color_selected,1);
+			DrawHZText12(gl_lang_toggle_reset,0,set_offset,main_row_y[5],gl_color_selected,1);
 			Draw_select_icon(x_offset,main_row_y[5],(toggle_reset == 0x1));
-			if(toggle_reset)
-				sprintf(msg,"%s",gl_enabled);
-			else
-				sprintf(msg,"%s",gl_disabled);
-			DrawHZText12(msg,0,x_offset+15,main_row_y[5],(reset_pos==0)?gl_color_selected:gl_color_text,1);
+			DrawHZText12(toggle_reset ? gl_enabled : gl_disabled,
+				0,x_offset+15,main_row_y[5],(reset_pos==0)?gl_color_selected:gl_color_text,1);
 
-			sprintf(msg,"%s",gl_lang_toggle_backup);
-			DrawHZText12(msg,0,set_offset,main_row_y[6],gl_color_selected,1);
+			DrawHZText12(gl_lang_toggle_backup,0,set_offset,main_row_y[6],gl_color_selected,1);
 			Draw_select_icon(x_offset,main_row_y[6],(toggle_backup == 0x1));
-			if(toggle_backup)
-				sprintf(msg,"%s",gl_enabled);
-			else
-				sprintf(msg,"%s",gl_disabled);
-			DrawHZText12(msg,0,x_offset+15,main_row_y[6],(backup_pos==0)?gl_color_selected:gl_color_text,1);
+			DrawHZText12(toggle_backup ? gl_enabled : gl_disabled,
+				0,x_offset+15,main_row_y[6],(backup_pos==0)?gl_color_selected:gl_color_text,1);
 
 			for(line=0;line<line_total;line++)
 			{

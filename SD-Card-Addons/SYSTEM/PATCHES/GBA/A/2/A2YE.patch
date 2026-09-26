@@ -1,0 +1,23 @@
+# DS Style GBA Auto Patch
+# Plain-text external game compatibility profile.
+# IRQ32 uses ROM BYTE offsets and is validated against 03007FFC/03FFFFFC.
+# ADD32 feeds the existing deferred Add2()/iPatchInfo2 pipeline.
+# PATCH16/PATCH32 are direct ROM writes; TRIM overrides patch placement.
+# SEARCH32PAIR is a bounded legacy search/write operation.
+FORMAT=2
+GAME=A2YE
+
+VARIANT=1
+# SOURCE=1928 - Top Gun - Combat Zones(US).zip
+IRQ32=000000FC
+IRQ32=000009F0
+PATCH16=00088816,3401
+PATCH16=00088814,46C0
+PATCH16=00088932,46C0
+PATCH16=00088938,46C0
+PATCH16=0008893C,46C0
+PATCH16=0008897C,46C0
+PATCH16=00088982,46C0
+PATCH16=00088986,46C0
+PATCH16=00088988,46C0
+END

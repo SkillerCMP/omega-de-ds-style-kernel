@@ -1,0 +1,286 @@
+{
+  "version": 1,
+  "description": "DS Style root image build manifest. Theme-folder images are handled by Build Skin Files.ps1.",
+  "assets": [
+    {
+      "source": "images/Chinese_manual.png",
+      "header": "images/Chinese_manual.h",
+      "symbol": "gImage_Chinese_manual",
+      "unit_bits": 8,
+      "width": 70,
+      "height": 70
+    },
+    {
+      "source": "images/English_manual.png",
+      "header": "images/English_manual.h",
+      "symbol": "gImage_English_manual",
+      "unit_bits": 8,
+      "width": 70,
+      "height": 70
+    },
+    {
+      "source": "images/NOTFOUND.png",
+      "header": "images/NOTFOUND.h",
+      "symbol": "gImage_NOTFOUND",
+      "unit_bits": 16,
+      "width": 120,
+      "height": 80
+    },
+    {
+      "source": "images/NOTFOUNDsquare.png",
+      "header": "images/NOTFOUNDsquare.h",
+      "symbol": "gImage_NOTFOUNDsquare",
+      "unit_bits": 16,
+      "width": 80,
+      "height": 80
+    },
+    {
+      "source": "images/SPLASH.png",
+      "header": "images/SPLASH.h",
+      "symbol": "gImage_splash",
+      "unit_bits": 8,
+      "width": 240,
+      "height": 160
+    },
+    {
+      "source": "images/icon_CV.png",
+      "header": "images/icon_CV.h",
+      "symbol": "gImage_icon_CV",
+      "unit_bits": 16,
+      "width": 16,
+      "height": 14
+    },
+    {
+      "source": "images/icon_EXE.png",
+      "header": "images/icon_EXE.h",
+      "symbol": "gImage_icon_EXE",
+      "unit_bits": 16,
+      "width": 16,
+      "height": 14
+    },
+    {
+      "source": "images/icon_FC.png",
+      "header": "images/icon_FC.h",
+      "symbol": "gImage_icon_FC",
+      "unit_bits": 16,
+      "width": 16,
+      "height": 14
+    },
+    {
+      "source": "images/icon_GB.png",
+      "header": "images/icon_GB.h",
+      "symbol": "gImage_icon_GB",
+      "unit_bits": 16,
+      "width": 16,
+      "height": 14
+    },
+    {
+      "source": "images/icon_GBC.png",
+      "header": "images/icon_GBC.h",
+      "symbol": "gImage_icon_GBC",
+      "unit_bits": 16,
+      "width": 16,
+      "height": 14
+    },
+    {
+      "source": "images/icon_GG.png",
+      "header": "images/icon_GG.h",
+      "symbol": "gImage_icon_GG",
+      "unit_bits": 16,
+      "width": 16,
+      "height": 14
+    },
+    {
+      "source": "images/icon_IMG.png",
+      "header": "images/icon_IMG.h",
+      "symbol": "gImage_icon_IMG",
+      "unit_bits": 16,
+      "width": 16,
+      "height": 14
+    },
+    {
+      "source": "images/icon_MSX.png",
+      "header": "images/icon_MSX.h",
+      "symbol": "gImage_icon_MSX",
+      "unit_bits": 16,
+      "width": 16,
+      "height": 14
+    },
+    {
+      "source": "images/icon_NG.png",
+      "header": "images/icon_NG.h",
+      "symbol": "gImage_icon_NG",
+      "unit_bits": 16,
+      "width": 16,
+      "height": 14
+    },
+    {
+      "source": "images/icon_PCE.bmp",
+      "header": "images/icon_PCE.h",
+      "symbol": "gImage_icon_PCE",
+      "unit_bits": 16,
+      "width": 16,
+      "height": 14
+    },
+    {
+      "source": "images/icon_SG.png",
+      "header": "images/icon_SG.h",
+      "symbol": "gImage_icon_SG",
+      "unit_bits": 16,
+      "width": 16,
+      "height": 14
+    },
+    {
+      "source": "images/icon_SMS.png",
+      "header": "images/icon_SMS.h",
+      "symbol": "gImage_icon_SMS",
+      "unit_bits": 16,
+      "width": 16,
+      "height": 14
+    },
+    {
+      "source": "images/icon_SV.png",
+      "header": "images/icon_SV.h",
+      "symbol": "gImage_icon_SV",
+      "unit_bits": 16,
+      "width": 16,
+      "height": 14
+    },
+    {
+      "source": "images/icon_TXT.png",
+      "header": "images/icon_TXT.h",
+      "symbol": "gImage_icon_TXT",
+      "unit_bits": 16,
+      "width": 16,
+      "height": 14
+    },
+    {
+      "source": "images/icon_WS.png",
+      "header": "images/icon_WS.h",
+      "symbol": "gImage_icon_WS",
+      "unit_bits": 8,
+      "width": 16,
+      "height": 14
+    },
+    {
+      "source": "images/icon_ZX.png",
+      "header": "images/icon_ZX.h",
+      "symbol": "gImage_icon_ZX",
+      "unit_bits": 16,
+      "width": 16,
+      "height": 14
+    },
+    {
+      "source": "images/icon_a26.png",
+      "header": "images/icon_a26.h",
+      "symbol": "gImage_icon_a26",
+      "unit_bits": 16,
+      "width": 16,
+      "height": 14
+    },
+    {
+      "source": "images/icon_arc.bmp",
+      "header": "images/icon_arc.h",
+      "symbol": "gImage_icon_arc",
+      "unit_bits": 16,
+      "width": 16,
+      "height": 14
+    },
+    {
+      "source": "images/icon_folder.bmp",
+      "header": "images/icon_folder.h",
+      "symbol": "gImage_icon_folder",
+      "unit_bits": 16,
+      "width": 16,
+      "height": 14
+    },
+    {
+      "source": "images/icon_gba.bmp",
+      "header": "images/icon_gba.h",
+      "symbol": "gImage_icon_gba",
+      "unit_bits": 16,
+      "width": 16,
+      "height": 14
+    },
+    {
+      "source": "images/icon_mid.png",
+      "header": "images/icon_mid.h",
+      "symbol": "gImage_icon_mid",
+      "unit_bits": 16,
+      "width": 16,
+      "height": 14
+    },
+    {
+      "source": "images/icon_mod.png",
+      "header": "images/icon_mod.h",
+      "symbol": "gImage_icon_mod",
+      "unit_bits": 16,
+      "width": 16,
+      "height": 14
+    },
+    {
+      "source": "images/icon_nsf.png",
+      "header": "images/icon_nsf.h",
+      "symbol": "gImage_icon_nsf",
+      "unit_bits": 16,
+      "width": 16,
+      "height": 14
+    },
+    {
+      "source": "images/icon_o2.png",
+      "header": "images/icon_o2.h",
+      "symbol": "gImage_icon_o2",
+      "unit_bits": 16,
+      "width": 16,
+      "height": 14
+    },
+    {
+      "source": "images/icon_other.bmp",
+      "header": "images/icon_other.h",
+      "symbol": "gImage_icon_other",
+      "unit_bits": 16,
+      "width": 16,
+      "height": 14
+    },
+    {
+      "source": "images/icon_pokem.png",
+      "header": "images/icon_pokem.h",
+      "symbol": "gImage_icon_pokem",
+      "unit_bits": 16,
+      "width": 16,
+      "height": 14
+    },
+    {
+      "source": "images/icon_sc3000.png",
+      "header": "images/icon_sc3000.h",
+      "symbol": "gImage_icon_SC3000",
+      "unit_bits": 8,
+      "width": 16,
+      "height": 14
+    },
+    {
+      "source": "images/icon_vmu.png",
+      "header": "images/icon_vmu.h",
+      "symbol": "gImage_icon_vmu",
+      "unit_bits": 16,
+      "width": 16,
+      "height": 14
+    },
+    {
+      "source": "images/icon_wav.png",
+      "header": "images/icon_wav.h",
+      "symbol": "gImage_icon_wav",
+      "unit_bits": 8,
+      "width": 16,
+      "height": 14
+    },
+    {
+      "source": "images/nor_icon.png",
+      "header": "images/nor_icon.h",
+      "symbol": "gImage_icon_nor",
+      "unit_bits": 8,
+      "width": 16,
+      "height": 14
+    }
+  ]
+}

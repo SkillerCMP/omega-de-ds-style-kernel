@@ -1,0 +1,22 @@
+# DS Style GBA Auto Patch
+# Plain-text external game compatibility profile.
+# IRQ32 uses ROM BYTE offsets and is validated against 03007FFC/03FFFFFC.
+# ADD32 feeds the existing deferred Add2()/iPatchInfo2 pipeline.
+# PATCH16/PATCH32 are direct ROM writes; TRIM overrides patch placement.
+# SEARCH32PAIR is a bounded legacy search/write operation.
+FORMAT=2
+GAME=APYE
+
+VARIANT=1
+# SOURCE=0293 - Puyo Pop(US).zip
+IRQ32=000000FC
+IRQ32=0001FDB8
+IRQ32=0056B1E4
+IRQ32=005750A0
+IRQ32=00599420
+IRQ32=005A41B8
+IRQ32=005D0F84
+IRQ32=005DAE40
+IRQ32=005FE9C0
+IRQ32=00609758
+END

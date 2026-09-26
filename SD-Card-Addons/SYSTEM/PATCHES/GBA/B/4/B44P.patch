@@ -1,0 +1,29 @@
+# DS Style GBA Auto Patch
+# Plain-text external game compatibility profile.
+# IRQ32 uses ROM BYTE offsets and is validated against 03007FFC/03FFFFFC.
+# ADD32 feeds the existing deferred Add2()/iPatchInfo2 pipeline.
+# PATCH16/PATCH32 are direct ROM writes; TRIM overrides patch placement.
+# SEARCH32PAIR is a bounded legacy search/write operation.
+FORMAT=2
+GAME=B44P
+
+VARIANT=1
+# SOURCE=2434 - 3 Games in 1 - Rugrats - I Gotta Go Party + SpongeBob SquarePants - SuperSponge + Tak and the Power of Juju(EU).zip
+IRQ32=000003B0
+IRQ32=0000519C
+IRQ32=00294144
+IRQ32=0029422C
+IRQ32=002B3104
+IRQ32=002B31EC
+IRQ32=002D2224
+IRQ32=002D230C
+IRQ32=002F42E4
+IRQ32=002F43CC
+IRQ32=00313884
+IRQ32=0031396C
+IRQ32=004001C4
+IRQ32=0040028C
+IRQ32=007D06FC
+IRQ32=007D11BC
+IRQ32=00800100
+END

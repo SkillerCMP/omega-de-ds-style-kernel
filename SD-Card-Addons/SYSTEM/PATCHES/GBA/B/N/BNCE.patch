@@ -1,0 +1,16 @@
+# DS Style GBA Auto Patch
+# Plain-text external game compatibility profile.
+# IRQ32 uses ROM BYTE offsets and is validated against 03007FFC/03FFFFFC.
+# ADD32 feeds the existing deferred Add2()/iPatchInfo2 pipeline.
+# PATCH16/PATCH32 are direct ROM writes; TRIM overrides patch placement.
+# SEARCH32PAIR is a bounded legacy search/write operation.
+FORMAT=2
+GAME=BNCE
+
+VARIANT=1
+# SOURCE=2168 - Tim Burton's Nightmare Before Christmas, The - The Pumpkin King(UE).zip
+IRQ32=000002E8
+IRQ32=001F16C4
+IRQ32=00216F40
+IRQ32=002436FC
+END

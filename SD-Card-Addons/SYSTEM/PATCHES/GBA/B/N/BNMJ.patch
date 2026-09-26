@@ -1,0 +1,14 @@
+# DS Style GBA Auto Patch
+# Plain-text external game compatibility profile.
+# IRQ32 uses ROM BYTE offsets and is validated against 03007FFC/03FFFFFC.
+# ADD32 feeds the existing deferred Add2()/iPatchInfo2 pipeline.
+# PATCH16/PATCH32 are direct ROM writes; TRIM overrides patch placement.
+# SEARCH32PAIR is a bounded legacy search/write operation.
+FORMAT=2
+GAME=BNMJ
+
+VARIANT=1
+# SOURCE=2404 - Mahou Sensei Negima! - Private Lesson 2 Ojamashimasuu Parasite de Chu(JP).zip
+IRQ32=000000FC
+IRQ32=0001C1B8
+END

@@ -37,16 +37,18 @@ u16 SET_info_buffer [0x200]EWRAM_BSS;
 #define	K_R		   (8)
 #define	K_L		 	 (9)
 
-u8* str_A      = (u8*)"   A  ";
-u8*	str_B		   = (u8*)"   B  ";
-u8* str_SELECT = (u8*)"Select";
-u8*	str_START	 = (u8*)"Start ";
-u8*	str_RIGHT	 = (u8*)"Right ";
-u8*	str_LEFT	 = (u8*)" Left ";
-u8* str_UP		 = (u8*)"  Up  ";
-u8*	str_DOWN	 = (u8*)" Down ";
-u8* str_R		   = (u8*)"   R  ";
-u8* str_L		   = (u8*)"   L  ";
+static const char *const launcher_key_names[10] =
+{
+	"   A  ", "   B  ", "Select", "Start ", "Right ",
+	" Left ", "  Up  ", " Down ", "   R  ", "   L  "
+};
+
+static const char *Launcher_KeyName(u32 key, u32 fallback_key)
+{
+	if(key < 10)
+		return launcher_key_names[key];
+	return launcher_key_names[(fallback_key < 10) ? fallback_key : K_L];
+}
 
 
 u16 v_reset;
@@ -98,9 +100,9 @@ u32 Setting_window(void)
 
 	u8 RTC_pos = 1;
 
-	u8 *str0;
-	u8 *str1;
-	u8 *str2;
+	const char *str0;
+	const char *str1;
+	const char *str2;
 
 
 	select = 0;
@@ -150,78 +152,57 @@ u32 Setting_window(void)
 		if(re_show)
 		{
 			//
-			sprintf(msg,"%s",gl_time);
-			DrawHZText12(msg,0,set_offset,y_offset,gl_color_selected,1);
+			DrawHZText12(gl_time,0,set_offset,y_offset,gl_color_selected,1);
 
 			//
-			sprintf(msg,"%s",gl_addon);
-			DrawHZText12(msg,0,set_offset,y_offset+line_x,gl_color_selected,1);
+			DrawHZText12(gl_addon,0,set_offset,y_offset+line_x,gl_color_selected,1);
 
 				Draw_select_icon(x_offset,y_offset+line_x,v_reset);
-				sprintf(msg,"%s",gl_reset);
-				DrawHZText12(msg,0,x_offset+15,y_offset+line_x,(addon_sel==0)?gl_color_selected:gl_color_text,1);
+				DrawHZText12(gl_reset,0,x_offset+15,y_offset+line_x,(addon_sel==0)?gl_color_selected:gl_color_text,1);
 
 				Draw_select_icon(x_offset+12*6,y_offset+line_x,v_rts);
-				sprintf(msg,"%s",gl_rts);
-				DrawHZText12(msg,0,x_offset+12*6+15,y_offset+line_x,(addon_sel==1)?gl_color_selected:gl_color_text,1);
+				DrawHZText12(gl_rts,0,x_offset+12*6+15,y_offset+line_x,(addon_sel==1)?gl_color_selected:gl_color_text,1);
 				VBlankIntrWait();
 				Draw_select_icon(x_offset,y_offset+line_x*2,v_sleep);
-				sprintf(msg,"%s",gl_sleep);
-				DrawHZText12(msg,0,x_offset+15,y_offset+line_x*2,(addon_sel==3)?gl_color_selected:gl_color_text,1);
+				DrawHZText12(gl_sleep,0,x_offset+15,y_offset+line_x*2,(addon_sel==3)?gl_color_selected:gl_color_text,1);
 				VBlankIntrWait();
 				Draw_select_icon(x_offset+12*6,y_offset+line_x*2,v_cheat);
-				sprintf(msg,"%s",gl_cheat);
-				DrawHZText12(msg,0,x_offset+12*6+15,y_offset+line_x*2,(addon_sel==4)?gl_color_selected:gl_color_text,1);
+				DrawHZText12(gl_cheat,0,x_offset+12*6+15,y_offset+line_x*2,(addon_sel==4)?gl_color_selected:gl_color_text,1);
 
 			//
-			sprintf(msg,"%s",gl_language);
-			DrawHZText12(msg,0,set_offset,y_offset+line_x*3,gl_color_selected,1);
+			DrawHZText12(gl_language,0,set_offset,y_offset+line_x*3,gl_color_selected,1);
 				Draw_select_icon(x_offset,y_offset+line_x*3,(language_sel == 0x0));
 				Draw_select_icon(x_offset+12*6,y_offset+line_x*3,(language_sel == 0x1));
-				sprintf(msg,"%s",gl_en_lang);
-				DrawHZText12(msg,0,x_offset+15,y_offset+line_x*3,((language_sel==0)&&currstate&& (2== select))?gl_color_selected:gl_color_text,1);
-				sprintf(msg,"%s",gl_zh_lang);
-				DrawHZText12(msg,0,x_offset+12*6+15,y_offset+line_x*3,((language_sel==1)&&currstate&& (2== select))?gl_color_selected:gl_color_text,1);
+				DrawHZText12(gl_en_lang,0,x_offset+15,y_offset+line_x*3,((language_sel==0)&&currstate&& (2== select))?gl_color_selected:gl_color_text,1);
+				DrawHZText12(gl_zh_lang,0,x_offset+12*6+15,y_offset+line_x*3,((language_sel==1)&&currstate&& (2== select))?gl_color_selected:gl_color_text,1);
 
 			//
 			VBlankIntrWait();
-			sprintf(msg,"%s",gl_engine);
-			DrawHZText12(msg,0,set_offset,y_offset+line_x*4,gl_color_selected,1);
+			DrawHZText12(gl_engine,0,set_offset,y_offset+line_x*4,gl_color_selected,1);
 				Draw_select_icon(x_offset,y_offset+line_x*4,(engine_sel == 0x1));
-				sprintf(msg,"%s",gl_use_engine);
-				DrawHZText12(msg,0,x_offset+15,y_offset+line_x*4,(engine_pos==0)?gl_color_selected:gl_color_text,1);
+				DrawHZText12(gl_use_engine,0,x_offset+15,y_offset+line_x*4,(engine_pos==0)?gl_color_selected:gl_color_text,1);
 			//
 
 			ClearWithBG((u16*)gImage_SET,set_offset, y_offset+line_x*5, 9*6, 13, 1);
 			ClearWithBG((u16*)gImage_SET,set_offset, y_offset+line_x*6, 9*6, 13, 1);
 			if( (v_rts==1) && (v_cheat == 0)  && (v_reset == 0)  && (v_sleep == 0)  ) {
-				sprintf(msg,"%s"," Save Key");
-				DrawHZText12(msg,0,set_offset,y_offset+line_x*5,gl_color_selected,1);
+				DrawHZText12(" Save Key",0,set_offset,y_offset+line_x*5,gl_color_selected,1);
 
-				sprintf(msg,"%s"," Load Key");
-				DrawHZText12(msg,0,set_offset,y_offset+line_x*6,gl_color_selected,1);
+				DrawHZText12(" Load Key",0,set_offset,y_offset+line_x*6,gl_color_selected,1);
 			}
 			else{
-				sprintf(msg,"%s",gl_hot_key);
-				DrawHZText12(msg,0,set_offset,y_offset+line_x*5,gl_color_selected,1);
+				DrawHZText12(gl_hot_key,0,set_offset,y_offset+line_x*5,gl_color_selected,1);
 
-				sprintf(msg,"%s",gl_hot_key2);
-				DrawHZText12(msg,0,set_offset,y_offset+line_x*6,gl_color_selected,1);
+				DrawHZText12(gl_hot_key2,0,set_offset,y_offset+line_x*6,gl_color_selected,1);
 			}
 
 			//RTC
-			sprintf(msg,"%s",gl_ingameRTC);
-			DrawHZText12(msg,0,set_offset,y_offset+line_x*7,gl_color_selected,1);
+			DrawHZText12(gl_ingameRTC,0,set_offset,y_offset+line_x*7,gl_color_selected,1);
 				Draw_select_icon(x_offset,y_offset+line_x*7,(gl_ingame_RTC_open_status == 0x1));
-				//sprintf(msg,"%s",gl_offRTC_powersave);
+				//snprintf(msg, sizeof(msg),"%s",gl_offRTC_powersave);
 				ClearWithBG((u16*)gImage_SET,x_offset+15, y_offset+line_x*7, 6*6, 13, 1);
-				if(gl_ingame_RTC_open_status){
-					sprintf(msg,"%s",gl_enabled);
-				}
-				else {
-					sprintf(msg,"%s",gl_disabled);
-				}
-				DrawHZText12(msg,0,x_offset+15,y_offset+line_x*7,(RTC_pos==0)?gl_color_selected:gl_color_text,1);
+				DrawHZText12(gl_ingame_RTC_open_status ? gl_enabled : gl_disabled,
+					0,x_offset+15,y_offset+line_x*7,(RTC_pos==0)?gl_color_selected:gl_color_text,1);
 
 
 			u32 offsety;
@@ -257,13 +238,8 @@ u32 Setting_window(void)
 
 				Clear(202,offsety-2 ,30,14,clean_color,1);
 
-				if(Set_OK && (line == Set_OK_line)){
-					sprintf(msg,"%s",gl_ok_btn);
-				}
-				else {
-					sprintf(msg,"%s",gl_set_btn);
-				}
-				DrawHZText12(msg,0,200+5,offsety,gl_color_text,1);
+				DrawHZText12((Set_OK && (line == Set_OK_line)) ? gl_ok_btn : gl_set_btn,
+					0,200+5,offsety,gl_color_text,1);
 				VBlankIntrWait();
 			}
 		}
@@ -299,7 +275,7 @@ u32 Setting_window(void)
 				if(month ==0)month=1;
 				if(day ==0)day=1;
 
-				sprintf(msg,"%u/%02u/%02u %02d:%02d:%02d %s",UNBCD(datetime[0])+2000,month,day,HH,MM,SS, wkday);
+				snprintf(msg, sizeof(msg),"%u/%02u/%02u %02d:%02d:%02d %s",UNBCD(datetime[0])+2000,month,day,HH,MM,SS, wkday);
 				ClearWithBG((u16*)gImage_SET,x_offset, y_offset, 22*6, 13, 1);
 				DrawHZText12(msg,0,x_offset,y_offset,gl_color_text,1);
 				VBlankIntrWait();
@@ -307,96 +283,18 @@ u32 Setting_window(void)
 				u16 read5 = Read_SET_info(assress_edit_sleephotkey_0);
 				u16 read6 = Read_SET_info(assress_edit_sleephotkey_1);
 				u16 read7 = Read_SET_info(assress_edit_sleephotkey_2);
-				switch(read5)
-				{
-					case 0:str0 = str_A;break;
-					case 1:str0 = str_B;break;
-					case 2:str0 = str_SELECT;break;
-					case 3:str0 = str_START;break;
-					case 4:str0 = str_RIGHT;break;
-					case 5:str0 = str_LEFT;break;
-					case 6:str0 = str_UP;break;
-					case 7:str0 = str_DOWN;break;
-					case 8:str0 = str_R;break;
-					case 9:str0 = str_L;break;
-					default:str0 = str_L;break;
-				}
-				switch(read6)
-				{
-					case 0:str1 = str_A;break;
-					case 1:str1 = str_B;break;
-					case 2:str1 = str_SELECT;break;
-					case 3:str1 = str_START;break;
-					case 4:str1 = str_RIGHT;break;
-					case 5:str1 = str_LEFT;break;
-					case 6:str1 = str_UP;break;
-					case 7:str1 = str_DOWN;break;
-					case 8:str1 = str_R;break;
-					case 9:str1 = str_L;break;
-					default:str1 = str_R;break;
-				}
-				switch(read7)
-				{
-					case 0:str2 = str_A;break;
-					case 1:str2 = str_B;break;
-					case 2:str2 = str_SELECT;break;
-					case 3:str2 = str_START;break;
-					case 4:str2 = str_RIGHT;break;
-					case 5:str2 = str_LEFT;break;
-					case 6:str2 = str_UP;break;
-					case 7:str2 = str_DOWN;break;
-					case 8:str2 = str_R;break;
-					case 9:str2 = str_L;break;
-					default:str2 = str_SELECT;break;
-				}
-				sprintf(msg,"%s %s  %s",str0,str1,str2);//read from flash
+				str0 = Launcher_KeyName(read5, K_L);
+				str1 = Launcher_KeyName(read6, K_R);
+				str2 = Launcher_KeyName(read7, K_SELECT);
+				snprintf(msg, sizeof(msg),"%s %s  %s",str0,str1,str2);//read from flash
 				DrawHZText12(msg,0,x_offset+10,y_offset+line_x*5,gl_color_text,1);
 				u16 read8 = Read_SET_info(assress_edit_rtshotkey_0);
 				u16 read9 = Read_SET_info(assress_edit_rtshotkey_1);
 				u16 read10 = Read_SET_info(assress_edit_rtshotkey_2);
-				switch(read8)
-				{
-					case 0:str0 = str_A;break;
-					case 1:str0 = str_B;break;
-					case 2:str0 = str_SELECT;break;
-					case 3:str0 = str_START;break;
-					case 4:str0 = str_RIGHT;break;
-					case 5:str0 = str_LEFT;break;
-					case 6:str0 = str_UP;break;
-					case 7:str0 = str_DOWN;break;
-					case 8:str0 = str_R;break;
-					case 9:str0 = str_L;break;
-					default:str0 = str_L;break;
-				}
-				switch(read9)
-				{
-					case 0:str1 = str_A;break;
-					case 1:str1 = str_B;break;
-					case 2:str1 = str_SELECT;break;
-					case 3:str1 = str_START;break;
-					case 4:str1 = str_RIGHT;break;
-					case 5:str1 = str_LEFT;break;
-					case 6:str1 = str_UP;break;
-					case 7:str1 = str_DOWN;break;
-					case 8:str1 = str_R;break;
-					case 9:str1 = str_L;break;
-					default:str1 = str_R;break;
-				}
-				switch(read10)
-				{
-					case 0:str2 = str_A;break;
-					case 1:str2 = str_B;break;
-					case 2:str2 = str_SELECT;break;
-					case 3:str2 = str_START;break;
-					case 4:str2 = str_RIGHT;break;
-					case 5:str2 = str_LEFT;break;
-					case 6:str2 = str_UP;break;
-					case 7:str2 = str_DOWN;break;
-					case 8:str2 = str_R;break;
-					case 9:str2 = str_L;break;
-					default:str2 = str_START;break;
-				}
-				sprintf(msg,"%s %s  %s",str0,str1,str2);
+				str0 = Launcher_KeyName(read8, K_L);
+				str1 = Launcher_KeyName(read9, K_R);
+				str2 = Launcher_KeyName(read10, K_START);
+				snprintf(msg, sizeof(msg),"%s %s  %s",str0,str1,str2);
 				DrawHZText12(msg,0,x_offset+10,y_offset+line_x*6,gl_color_text,1);
 
 				re_show = 0;
@@ -509,7 +407,7 @@ u32 Setting_window(void)
 								case 6:wkday = gl_Sat;break;
 								default:wkday = gl_Sun;break;
 							}
-							sprintf(msg,"20%02d/%02d/%02d %02d:%02d:%02d %s",edit_datetime[_YEAR],edit_datetime[_MONTH],edit_datetime[_DAY],edit_datetime[_HOUR],edit_datetime[_MIN],edit_datetime[_SEC] ,wkday);
+							snprintf(msg, sizeof(msg),"20%02d/%02d/%02d %02d:%02d:%02d %s",edit_datetime[_YEAR],edit_datetime[_MONTH],edit_datetime[_DAY],edit_datetime[_HOUR],edit_datetime[_MIN],edit_datetime[_SEC] ,wkday);
 							DrawHZText12(msg,0,x_offset,y_offset,gl_color_text,1);
 						}
 						else if(select ==4)
@@ -529,49 +427,10 @@ u32 Setting_window(void)
 								Clear(clean_pos,y_offset+line_x*5 ,36,13,gl_color_btn_clean,1);
 
 							//DEBUG_printf("%x %x %x", edit_sleephotkey[0],edit_sleephotkey[1],edit_sleephotkey[2]);
-							switch(edit_sleephotkey[0])
-							{
-								case 0:str0 = str_A;break;
-								case 1:str0 = str_B;break;
-								case 2:str0 = str_SELECT;break;
-								case 3:str0 = str_START;break;
-								case 4:str0 = str_RIGHT;break;
-								case 5:str0 = str_LEFT;break;
-								case 6:str0 = str_UP;break;
-								case 7:str0 = str_DOWN;break;
-								case 8:str0 = str_R;break;
-								case 9:str0 = str_L;break;
-								default:str0= str_L;break;
-							}
-							switch(edit_sleephotkey[1])
-							{
-								case 0:str1 = str_A;break;
-								case 1:str1 = str_B;break;
-								case 2:str1 = str_SELECT;break;
-								case 3:str1 = str_START;break;
-								case 4:str1 = str_RIGHT;break;
-								case 5:str1 = str_LEFT;break;
-								case 6:str1 = str_UP;break;
-								case 7:str1 = str_DOWN;break;
-								case 8:str1 = str_R;break;
-								case 9:str1 = str_L;break;
-								default:str1= str_R;break;
-							}
-							switch(edit_sleephotkey[2])
-							{
-								case 0:str2 = str_A;break;
-								case 1:str2 = str_B;break;
-								case 2:str2 = str_SELECT;break;
-								case 3:str2 = str_START;break;
-								case 4:str2 = str_RIGHT;break;
-								case 5:str2 = str_LEFT;break;
-								case 6:str2 = str_UP;break;
-								case 7:str2 = str_DOWN;break;
-								case 8:str2 = str_R;break;
-								case 9:str2 = str_L;break;
-								default:str2= str_SELECT;break;
-							}
-							sprintf(msg,"%s %s  %s",str0,str1,str2);
+							str0 = Launcher_KeyName(edit_sleephotkey[0], K_L);
+							str1 = Launcher_KeyName(edit_sleephotkey[1], K_R);
+							str2 = Launcher_KeyName(edit_sleephotkey[2], K_SELECT);
+							snprintf(msg, sizeof(msg),"%s %s  %s",str0,str1,str2);
 							DrawHZText12(msg,0,x_offset+10,y_offset+line_x*5,gl_color_text,1);
 						}
 						else if(select ==5)
@@ -590,49 +449,10 @@ u32 Setting_window(void)
 							if(	rtshotkey_pos < 3)
 								Clear(clean_pos,y_offset+line_x*6 ,36,13,gl_color_btn_clean,1);
 							//DEBUG_printf("%x %x %x", edit_rtshotkey[0],edit_rtshotkey[1],edit_rtshotkey[2]);
-							switch(edit_rtshotkey[0])
-							{
-								case 0:str0 = str_A;break;
-								case 1:str0 = str_B;break;
-								case 2:str0 = str_SELECT;break;
-								case 3:str0 = str_START;break;
-								case 4:str0 = str_RIGHT;break;
-								case 5:str0 = str_LEFT;break;
-								case 6:str0 = str_UP;break;
-								case 7:str0 = str_DOWN;break;
-								case 8:str0 = str_R;break;
-								case 9:str0 = str_L;break;
-								default:str0= str_L;break;
-							}
-							switch(edit_rtshotkey[1])
-							{
-								case 0:str1 = str_A;break;
-								case 1:str1 = str_B;break;
-								case 2:str1 = str_SELECT;break;
-								case 3:str1 = str_START;break;
-								case 4:str1 = str_RIGHT;break;
-								case 5:str1 = str_LEFT;break;
-								case 6:str1 = str_UP;break;
-								case 7:str1 = str_DOWN;break;
-								case 8:str1 = str_R;break;
-								case 9:str1 = str_L;break;
-								default:str1= str_R;break;
-							}
-							switch(edit_rtshotkey[2])
-							{
-								case 0:str2 = str_A;break;
-								case 1:str2 = str_B;break;
-								case 2:str2 = str_SELECT;break;
-								case 3:str2 = str_START;break;
-								case 4:str2 = str_RIGHT;break;
-								case 5:str2 = str_LEFT;break;
-								case 6:str2 = str_UP;break;
-								case 7:str2 = str_DOWN;break;
-								case 8:str2 = str_R;break;
-								case 9:str2 = str_L;break;
-								default:str2= str_START;break;
-							}
-							sprintf(msg,"%s %s  %s",str0,str1,str2);
+							str0 = Launcher_KeyName(edit_rtshotkey[0], K_L);
+							str1 = Launcher_KeyName(edit_rtshotkey[1], K_R);
+							str2 = Launcher_KeyName(edit_rtshotkey[2], K_START);
+							snprintf(msg, sizeof(msg),"%s %s  %s",str0,str1,str2);
 							DrawHZText12(msg,0,x_offset+10,y_offset+line_x*6,gl_color_text,1);
 						}
 

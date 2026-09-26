@@ -1,5 +1,7 @@
+.syntax unified
+.include "gba_rts3_defs.inc"
 @;--------------------------------------------------------------------
-	.section   	.iwram,"ax",%progbits
+	.section   	.rodata,"a",%progbits
 
 	.global  RTS_only_ReplaceIRQ_start
 	.global  RTS_only_ReplaceIRQ_end
@@ -7,6 +9,7 @@
 	.global  RTS_only_SAVE_key
 	.global  RTS_only_LOAD_key
 	.global  RTS_only_state_identity
+	.global RTS_only_rts2_header
 
 
 
@@ -99,17 +102,25 @@ RTS_irq:
 	TSTEQ		R1, #0x10000000
 	LDREQ		PC, [R0,#-0xC]			@;old_interrupt_handler
 
-	ldr 		r2,[r0,#REG_P1]
-	bic 		r2,r2,#0xFF000000
-	bic 		r2,r2,#0x00FF0000
+	add 		r2,r0,#0x100
+	ldrh		r2,[r2,#0x30]		@;KEYINPUT (0x04000130), 16-bit
 
 check_save:
-	adr 		r3,RTS_only_SAVE_key
+    ldrh r1,[r0,#6]
+    cmp r1,#160
+    ldrlo pc,[r0,#-0xC]
+    mrs r1,SPSR
+    and r1,r1,#31
+    cmp r1,#0x10
+    cmpne r1,#0x1F
+    cmpne r1,#0x13
+    ldrne pc,[r0,#-0xC]
+	RTS_ADRL 		r3,RTS_only_SAVE_key
 	ldr 		r3,[r3]
 	cmp 		r2,r3
 	beq			call_Save
 check_load:
-	adr 		r3,RTS_only_LOAD_key
+	RTS_ADRL 		r3,RTS_only_LOAD_key
 	ldr 		r3,[r3]
 	cmp 		r2,r3
 	beq 		call_Load
@@ -144,407 +155,72 @@ SetRampage:
 	bx		lr
 @;------------------------------------------------------
 WriteSram: @;(u32 address, u8 *data, u32 size)
-	ADD 		R2,R2,R0
-	SUB 		R1,R1,R0
-wSram_loop1:
-	CMP     R0, R2
+	CMP     R2, #0
+	BXEQ    LR
+wSram_loop:
+	LDR     R3, [R1],#4
+	STRB    R3, [R0],#1
+	LSR     R3, R3, #0x8
+	STRB    R3, [R0],#1
+	LSR     R3, R3, #0x8
+	STRB    R3, [R0],#1
+	LSR     R3, R3, #0x8
+	STRB    R3, [R0],#1
+	SUBS    R2, R2, #4
 	BNE     wSram_loop
 	BX      LR
-wSram_loop:
-	LDR     R3, [R1,R0]
-	STRB    R3, [R0],#1
-	LSR     R3, R3, #0x8
-	STRB    R3, [R0],#1
-	LSR     R3, R3, #0x8
-	STRB    R3, [R0],#1
-	LSR     R3, R3, #0x8
-	STRB    R3, [R0],#1
-	B       wSram_loop1
 @;------------------------------------------------------
 ReadSram: @;(u32 address, u8 *data, u32 size)
-	ADDS    R2, R2, R0
-	SUBS    R1, R1, R0
-rSram_loop1:
-	CMP     R0, R2
+	CMP     R2, #0
+	BXEQ    LR
+rSram_loop:
+	LDRB    R4, [R0],#1
+	LDRB    R3, [R0],#1
+	ORR     R4, R4, R3, LSL #8
+	LDRB    R3, [R0],#1
+	ORR     R4, R4, R3, LSL #16
+	LDRB    R3, [R0],#1
+	ORR     R4, R4, R3, LSL #24
+	STR     R4, [R1],#4
+	SUBS    R2, R2, #4
 	BNE     rSram_loop
 	BX      LR
-rSram_loop:
-	LDRB    R3, [R0]
-	LSL 		R4,R3,#0
-	LDRB    R3, [R0,#1]
-	LSL 		R5,R3,#8
-	ORR			R4,R5
-	LDRB    R3, [R0,#2]
-	LSL 		R5,R3,#16
-	ORR			R4,R5
-	LDRB    R3, [R0,#3]
-	LSL 		R5,R3,#24
-	ORR			R4,R5
-	STR     R4, [R1,R0]
-	ADDS    R0, #4
-	B       rSram_loop1
 @;------------------------------------------------------
 @;------------------------------------------------------
 restore2_IO:        @; IOaddress, offset
-	LDRB    R3, [R1]
-	LSL 		R4,R3,#0
+	LDRB    R4, [R1]
 	LDRB    R3, [R1,#1]
-	LSL 		R5,R3,#8
-	ORR			R4,R5
+	ORR     R4, R4, R3, LSL #8
 	STRH    R4, [R0]
 	bx lr
 	.ltorg
 @;------------------------------------------------------
 @;------------------------------------------------------
 call_Save:
-	@ Invalidate the previous state before overwriting any state payload.
-	mov 	r0,#0xA0
-	bl 		SetRampage
-	ldr 	r0,=0x0E00FFF0
-	adrl	r1,S_RTS_INVALID
-	mov 	r2,#0x10
-	bl 		WriteSram
-	@;adrl	r7,RTS_switch
-	@;ldr		r7,[r7]
-	@;cmp 	r7,#1
-	@;bne 	errorRTS
-	adrl		r2, spend_0x80
-	ldr			r2,[r2]
-	stmia		r2!,{r4-r11,sp,lr} @;0x0
-	mrs	 		r3,SPSR
-	stmia		r2!,{r3}      			@;0x28
-
-	stmfd		sp!,{r0-r10,lr}
-	bl			BAK_
-
-	@;02000000-0203FFFF   WRAM - On-board Work RAM  (256 KBytes)
-	mov		r8,#0x40   @; 0x40 0x50 0x60 0x70
-	mov   r9,#0x2000000
-wram_2000000:
-	mov 	r0,r8
-	bl 		SetRampage
-	mov 	r0,#0x0E000000
-	mov 	r1,r9
-	mov		r2,#0x10000
-	bl 		WriteSram
-	add 	r8,#0x10
-	add 	r9,#0x10000
-	cmp 	r8,#0x80
-	bne 	wram_2000000
-
-	@;03000000-03007FFF   WRAM - On-chip Work RAM   (32 KBytes)
-	mov 	r0,#0x80
-	bl 		SetRampage
-	mov r0,#0x0E000000
-	mov r1,#0x3000000
-	mov r2,#0x8000
-	bl 	WriteSram
-
-	@;05000000-050003FF   BG/OBJ Palette RAM        (1 Kbyte)
-	ldr r0,=0x0E008000
-	mov r1,#0x5000000
-	mov r2,#0x400
-	bl 	WriteSram
-
-	mov 	r0,#0x90
-	bl 		SetRampage
-	mov r0,#0x0E000000
-	mov r1,#0x6000000
-	mov r2,#0x10000
-	bl 	WriteSram
-
-	mov 	r0,#0xA0
-	bl 		SetRampage
-	mov r0,#0x0E000000
-	ldr r1,=0x6010000
-	mov r2,#0x8000
-	bl 	WriteSram
-
-	@;07000000-070003FF   OAM - OBJ Attributes      (1 Kbyte)
-	ldr r0,=0x0E008000
-	mov r1,#0x7000000
-	mov r2,#0x400
-	bl 	WriteSram
-
-	@;R4-R11
-	mrs	  r0,CPSR    @;Back up
-	adrl	r7, spend_0x80
-	ldr		r7,[r7]
-	add		r7,#0x50  @;{r4-r11,sp,lr} SPSR  0x28+4
-
-	mov		r1, #0xDF		@; Switch to systme Mode
-	msr		cpsr_cf, r1
-	NOP
-	mov		r6,sp
-	stmia r7!,{r6,lr}
-
-	msr 	cpsr_cf,r0	;@return IRQ mode
-	NOP
-
-	ldr 	r0,=0x0E008400
-	adrl 	r1, spend_0x80
-	ldr		r1,[r1]
-	mov 	r2,#0x80
-	bl 		WriteSram
-
-	@;04000000-040003FE   I/O Registers
-	ldr r0,=0x0E009000
-	mov r1,#0x4000000
-	mov r2,#0x210  @;#0x60					@;0x0-0x60
-	bl 	WriteSram
-
-	@;FLAG
-	ldr r0,=0x0E00FFF0
-	adrl r1,S_RTS_FLAG
-	mov r2,#0x10
-	bl 	WriteSram
-
-save_exit:
-	mov 	r0,#0x0
-	bl 		SetRampage
-
-	BL 		Restore_
-	ldmfd	sp!,{r0-r10,lr}
-	@;mov 	r0,#0x04000000
-	ldr 	pc,[r0,#-(0x04000000-0x03FFFFF4)] @;to normal IRQ routine
-@;===================================================
-BAK_:
-	adrl		R2, spend_0x80
-	ldr			R2,[R2]
-	add 		R2,#0x30
-	LDR			R0, =0x4000200
-	MOV			R1, #0
-
-	LDRH		R3, [R0,#8]
-	STRH		R3, [R2,#0]
-	STRH		R1, [R0,#8]@;v4000208 = 0;
-
-	LDR			R0, =0x4000100
-	LDRH		R3, [R0,#2]
-	STRH		R3, [R2,#2]
-	STRH		R1, [R0,#2]@;v4000102 = 0;
-
-	LDRH		R3, [R0,#6]
-	STRH		R3, [R2,#4]
-	STRH    R1, [R0,#6]@;v4000106 = 0;
-
-	LDRH    R3, [R0,#0xA]
-	STRH		R3, [R2,#6]
-	STRH    R1, [R0,#0xA]@;v400010A = 0;
-
-	LDRH    R3, [R0,#0xE]
-	STRH		R3, [R2,#8]
-	STRH    R1, [R0,#0xE]@;v400010E = 0;
-	MOV			PC, LR
-@;===================================================
-Restore_:
-	adrl		R3, spend_0x80
-	ldr			R3,[R3]
-	add 		R3,#0x30
-
-	LDR			R0, =0x4000100
-
-	LDRH		R1, [R3,#2]
-	STRH		R1, [R0,#2]@;v4000102
-
-	LDRH		R1, [R3,#4]
-	STRH		R1, [R0,#6]@;v4000106;
-
-	LDRH		R1, [R3,#6]
-	STRH		R1, [R0,#0xA]@;v400010A;
-
-	LDRH		R1, [R3,#8]
-	STRH		R1, [R0,#0xE]@;v400010E;
-
-	LDR			R0, =0x4000200
-	LDR			R2, =0x0
-	STRH		R2, [R0,#0x2]@;v4000202;
-	LDRH		R1, [R3,#0]
-	STRH		R1, [R0,#0x8]@;v4000208;	 IME
-	MOV			PC, LR
-@;===================================================
+    stmfd sp!,{r0-r12,lr}
+    mov r0,sp
+    bl rts3_enter
+    bl rts3_save
+    b rts3_save_exit
 call_Load:
-	@;check 	;FLAG
-	stmfd		sp!,{r0-r3,lr}
-	mov 	r0,#0xA0
-	bl 		SetRampage
-	ldr 	r0,=0x0E00FFF0
-	adrl 	r1, spend_0x80  @;temp buff
-	ldr 	r1,[r1]
-	mov 	r2,#0x10
-	bl 		ReadSram
+    stmfd sp!,{r0-r12,lr}
+    mov r0,sp
+    bl rts3_enter
+    bl rts3_validate
+    cmp r0,#1
+    beq rts3_load
+    b rts3_live_exit
 
-	adrl 	r1,S_RTS_FLAG
-	adrl 	r2, spend_0x80 @;temp buff
-	ldr 	r2,[r2]
-	mov 	r3,#0
-loop_check:
-	ldr 	r4,[r1],#4
-	ldr 	r5,[r2],#4
-	cmp 	r4,r5
-	bne 	errorRTS
-	add 	r3,#1
-	cmp 	r3,#4
-	bne 	loop_check
-	b 		checkOK
-errorRTS:
-	mov 	r0,#0x0
-	bl 		SetRampage
-	ldmfd		sp!,{r0-r3,lr}
-	ldr 		pc,[r0,#-(0x04000000-0x03FFFFF4)] @;to normal IRQ routine
-@;===================================================
-@;===================================================
-checkOK:
-	ldr r0,=0x4000208   @;0x4000208
-	mov r1,#0
-	strh r1,[r0]
-
-	@;02000000-0203FFFF   WRAM - On-board Work RAM  (256 KBytes)
-	mov		r8,#0x40   @; 0x40 0x50 0x60 0x70
-	mov   r9,#0x2000000
-wram_2000000_Load:
-	mov 	r0,r8
-	bl 		SetRampage
-	mov 	r0,#0x0E000000
-	mov 	r1,r9
-	mov		r2,#0x10000
-	bl 		ReadSram
-	add 	r8,#0x10
-	add 	r9,#0x10000
-	cmp 	r8,#0x80
-	bne 	wram_2000000_Load
-
-	@;03000000-03007FFF   WRAM - On-chip Work RAM   (32 KBytes)
-	mov 	r0,#0x80
-	bl 		SetRampage
-	mov r0,#0x0E000000
-	mov r1,#0x3000000
-	mov r2,#0x8000
-	bl 	ReadSram
-
-	@;05000000-050003FF   BG/OBJ Palette RAM        (1 Kbyte)
-	ldr r0,=0x0E008000
-	mov r1,#0x5000000
-	mov r2,#0x400
-	bl 	ReadSram
-
-	@;06000000-06017FFF   VRAM - Video RAM          (96 KBytes)
-	mov 	r0,#0x90
-	bl 		SetRampage
-	mov r0,#0x0E000000
-	mov r1,#0x6000000
-	mov r2,#0x10000
-	bl 	ReadSram
-	mov 	r0,#0xA0
-	bl 		SetRampage
-	mov r0,#0x0E000000
-	ldr r1,=0x6010000
-	mov r2,#0x8000
-	bl 	ReadSram
-
-	@;07000000-070003FF   OAM - OBJ Attributes      (1 Kbyte)
-	ldr r0,=0x0E008000
-	mov r1,#0x7000000
-	mov r2,#0x400
-	bl 	ReadSram
-
-	@;-------------------------------------
-	mov r10,#0x4000000
-	LDR r11,=0x0E009000
-
-	adr r9,register_list
-register_list_loop:
-	ldrh r2,[r9],#2
-	cmp r2 ,#0xFF00
-	beq register_list_end
-
-	add r0,r10,r2   @;0x4000000  0x4000002 0x4000004
-	add r1,r11,r2
-	bl  restore2_IO
-	b 	register_list_loop
-register_list_end:
-
-	@;mov r10,#0x4000000
-	@;LDR r11,=0x0E008500
-@;	add r0,r10,#0xBA  @;0x40000BA  DMA
-@;	add r1,r11,#0x32
-@;	bl  restore2_IO
-	@;add r0,r10,#0xC6  @;0x40000C6
-	@;add r1,r11,#0x34
-	@;bl  restore2_IO
-@;	add r0,r10,#0xD2  @;0x40000D2
-@;	add r1,r11,#0x36
-@;	bl  restore2_IO
-@;	add r0,r10,#0xDE  @;0x40000DE
-@;	add r1,r11,#0x38
-@;	bl  restore2_IO
-
-	@;mov   r4,#0x8F
-	@;mov   r7,#0x4000000
-	@;strh 	r4,[r7,#REG_SOUNDCNT_X]
-
-	@;ldr r0,=0x4000202   @;0x4000202
-	@;mov r1,#0
-	@;strh r1,[r0]
-
-	ldr 	r0,=0x0E008400
-	adrl 	r1, spend_0x80 @;temp buff
-	ldr		r1,[r1]
-	mov 	r2,#0x80
-	bl 		ReadSram
-
-	mrs	  r0,CPSR
-	adrl	r7, spend_0x80
-	ldr		r7,[r7]
-	add		r7,#0x28      @;SPSR offset
-
-	ldmia	r7!,{r2}			@;r7=0x2C
-	msr		SPSR_cxsf,r2	@;restore SPSR_irq
-
-	mov		r1, #0xDF		  @;Switch to systme Mode
-	msr		cpsr_cf, r1
-	NOP
-	add		r7,#0x24					@;offset 0x50
-	ldmia r7!,{r13-r14}
-
-	msr 	cpsr_cf,r0	  @;restore IRQ
-	NOP
-
-	mov 	r0,#0x0
-	bl 		SetRampage
-
-	BL 		Restore_
-
-	adrl	r12, spend_0x80
-	ldr		r12,[r12]
-	ldmia r12!,{r4-r11,sp,lr}
-	mov 	r0,#0x04000000
-	ldr 	pc,[r0,#-(0x04000000-0x03FFFFF4)] @;to normal IRQ routine
-
-	@;===================================================
-	.ltorg
-	@;===================================================
-register_list:
-	.hword 0x0000,0x0002,0x0004,0x0008,0x000A,0x000C,0x000E
-	.hword 0x0048,0x004A,0x0050,0x0052
-	.hword 0x0084
-	.hword 0x0060,0x0062,0x0068,0x0070,0x0072,0x0078
-	.hword 0x0080,0x0082,0x0088                 @;0x008C,0x008E,
-	.hword 0x0090,0x0092,0x0094,0x0096,0x0098,0x009A,0x009C,0x009E
-
-	.hword 0x00B8,0x00C4,0x00D0,0x00DC  @;DMA
-	.hword 0x0120,0x0122,0x0124,0x0126,0x0128,0x012A,0x012C,0x0132,0x0134
-	.hword 0x0140,0x0150,0x0154
-	@;,0x0200,0x0204,0x0208
-	.hword 0xFF00
 	.align
 @;------------------------------------------------
 
 	.align
+.include "gba_rts3_core.inc"
+.set RTS_only_rts2_header, rts3_header_template
 S_RTS_INVALID:
 	.word 0x00000000,0x00000000,0x00000000,0x00000000
 S_RTS_FLAG:
-	.byte 'E','Z','R','T','S','O','0','1'
+	.byte 'E','Z','R','T','S','O','0','3'
 RTS_only_state_identity:
 	.word 0x00000000,0x00000000	@ patched game code + ROM size
 	.align

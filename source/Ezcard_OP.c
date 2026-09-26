@@ -14,11 +14,8 @@
 #include "draw.h"
 #include "Ezcard_OP.h"
 
-//#include "fw.h"
 
 #include "lang.h"
-
-const u32 image_bin_size2=952016;
 
 
 extern unsigned char ASC_DATA_OLD[];
@@ -266,7 +263,10 @@ void IWRAM_CODE SetRompageWithHardReset(u16 page,u32 bootmode)
 {
 	Set_RTC_status(gl_ingame_RTC_open_status);
 	SetRompage(page);
-	RegisterRamReset(RESET_PALETTE| RESET_VRAM|RESET_OAM |RESET_SIO | RESET_SOUND | RESET_OTHER);
+	u32 reset_flags = RESET_PALETTE | RESET_VRAM | RESET_OAM | RESET_SIO | RESET_SOUND | RESET_OTHER;
+	if(bootmode == 0)
+		reset_flags |= RESET_EWRAM;
+	RegisterRamReset(reset_flags);
 	if(bootmode==1) {
 		if(key_L)
 			SoftReset_now();
@@ -532,8 +532,7 @@ void IWRAM_CODE Check_FW_update()
 	//DEBUG_printf("Current_FW_ver %x ",Current_FW_ver);
 	Clear(0, 0, 240, 160, RGB(0,18,24), 1);
 
-	sprintf(msg,"FIRMWARE UPDATE");
-	DrawHZText12(msg,0,75,offset_Y+0*line_x, 0x7FFF,1);
+	DrawHZText12("FIRMWARE UPDATE",0,75,offset_Y+0*line_x, 0x7FFF,1);
 
 	u16 DEcard_FW_readver = Read_FPGA_ver();
 	u16 DEcard_FW_ver = DEcard_FW_readver & 0x00FF;
@@ -555,17 +554,14 @@ void IWRAM_CODE Check_FW_update()
 	}
 
 	if (updateFirmware) {
-		sprintf(msg,"Current firmware version: V%02d",DEcard_FW_readver);
+		snprintf(msg, sizeof(msg), "Current firmware version: V%02d", DEcard_FW_readver);
 		DrawHZText12(msg,0,2,offset_Y+1*line_x, 0x7FFF,1);
 
-		sprintf(msg,"Please use the OFFICIAl kernel to");
-		DrawHZText12(msg,0,2,offset_Y+3*line_x, 0x7FFF,1);
+		DrawHZText12("Please use the OFFICIAl kernel to",0,2,offset_Y+3*line_x, 0x7FFF,1);
 
-		sprintf(msg,"update firmware. Sorry.");
-		DrawHZText12(msg,0,2,offset_Y+4*line_x, 0x7FFF,1);
+		DrawHZText12("update firmware. Sorry.",0,2,offset_Y+4*line_x, 0x7FFF,1);
 
-		sprintf(msg,"Press (B) to skip.");
-		DrawHZText12(msg,0,2,offset_Y+6*line_x, 0x7FFF,1);
+		DrawHZText12("Press (B) to skip.",0,2,offset_Y+6*line_x, 0x7FFF,1);
 
 		while(1)
 		{

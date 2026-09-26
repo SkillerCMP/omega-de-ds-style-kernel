@@ -1,0 +1,22 @@
+# DS Style GBA Auto Patch
+# Plain-text external game compatibility profile.
+# IRQ32 uses ROM BYTE offsets and is validated against 03007FFC/03FFFFFC.
+# ADD32 feeds the existing deferred Add2()/iPatchInfo2 pipeline.
+# PATCH16/PATCH32 are direct ROM writes; TRIM overrides patch placement.
+# SEARCH32PAIR is a bounded legacy search/write operation.
+FORMAT=2
+GAME=AKCE
+
+VARIANT=1
+# SOURCE=0359 - Konami Collector's Series - Arcade Advanced(US).zip
+IRQ32=000000FC
+IRQ32=00009A68
+IRQ32=00309AFC
+IRQ32=00309C54
+IRQ32=0033B034
+IRQ32=0033B18C
+IRQ32=0037385C
+IRQ32=003739B4
+IRQ32=003B201C
+IRQ32=003B2174
+END

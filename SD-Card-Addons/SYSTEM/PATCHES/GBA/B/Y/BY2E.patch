@@ -1,0 +1,18 @@
+# DS Style GBA Auto Patch
+# Plain-text external game compatibility profile.
+# IRQ32 uses ROM BYTE offsets and is validated against 03007FFC/03FFFFFC.
+# ADD32 feeds the existing deferred Add2()/iPatchInfo2 pipeline.
+# PATCH16/PATCH32 are direct ROM writes; TRIM overrides patch placement.
+# SEARCH32PAIR is a bounded legacy search/write operation.
+FORMAT=2
+GAME=BY2E
+
+VARIANT=1
+# SOURCE=2437 - 2 Games in 1 - Yu-Gi-Oh! The Sacred Cards + Yu-Gi-Oh! Reshef of Destruction(US).zip
+IRQ32=00000274
+IRQ32=00000678
+IRQ32=00090168
+IRQ32=00098128
+IRQ32=01080168
+IRQ32=01083A7C
+END

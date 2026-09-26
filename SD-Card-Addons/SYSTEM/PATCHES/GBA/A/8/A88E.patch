@@ -1,0 +1,21 @@
+# DS Style GBA Auto Patch
+# Plain-text external game compatibility profile.
+# IRQ32 uses ROM BYTE offsets and is validated against 03007FFC/03FFFFFC.
+# ADD32 feeds the existing deferred Add2()/iPatchInfo2 pipeline.
+# PATCH16/PATCH32 are direct ROM writes; TRIM overrides patch placement.
+# SEARCH32PAIR is a bounded legacy search/write operation.
+FORMAT=2
+GAME=A88E
+
+VARIANT=1
+# SOURCE=1277 - Mario & Luigi - Superstar Saga(US).zip
+IRQ32=00000104
+IRQ32=00017D78
+IRQ32=00F50278
+IRQ32=00F50708
+IRQ32=00F5B868
+IRQ32=00F6F998
+IRQ32=00F6FB0C
+IRQ32=00F7E34C
+IRQ32=00F7E68C
+END

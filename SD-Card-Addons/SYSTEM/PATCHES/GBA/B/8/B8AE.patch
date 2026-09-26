@@ -1,0 +1,18 @@
+# DS Style GBA Auto Patch
+# Plain-text external game compatibility profile.
+# IRQ32 uses ROM BYTE offsets and is validated against 03007FFC/03FFFFFC.
+# ADD32 feeds the existing deferred Add2()/iPatchInfo2 pipeline.
+# PATCH16/PATCH32 are direct ROM writes; TRIM overrides patch placement.
+# SEARCH32PAIR is a bounded legacy search/write operation.
+FORMAT=2
+GAME=B8AE
+
+VARIANT=1
+# SOURCE=2196 - 2 Games in 1 - Crash Bandicoot 2 - N-Tranced + Crash Nitro Kart(US).zip
+IRQ32=00000738
+IRQ32=0082AC84
+IRQ32=00FE61B4
+IRQ32=00FE6434
+IRQ32=00FF5104
+IRQ32=00FF5380
+END

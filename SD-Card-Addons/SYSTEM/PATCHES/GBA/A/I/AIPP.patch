@@ -1,0 +1,19 @@
+# DS Style GBA Auto Patch
+# Plain-text external game compatibility profile.
+# IRQ32 uses ROM BYTE offsets and is validated against 03007FFC/03FFFFFC.
+# ADD32 feeds the existing deferred Add2()/iPatchInfo2 pipeline.
+# PATCH16/PATCH32 are direct ROM writes; TRIM overrides patch placement.
+# SEARCH32PAIR is a bounded legacy search/write operation.
+FORMAT=2
+GAME=AIPP
+
+VARIANT=1
+# SOURCE=1919 - Silent Scope(EU).zip
+IRQ32=000000FC
+IRQ32=000008B8
+IRQ32=0004AA90
+IRQ32=0004AF94
+IRQ32=007024D8
+IRQ32=00702844
+IRQ32=007031D0
+END

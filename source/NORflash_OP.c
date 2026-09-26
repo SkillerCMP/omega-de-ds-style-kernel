@@ -159,7 +159,7 @@ void Chip_Erase()
 void FormatNor()
 {
 	char msg[128];
-	sprintf(msg,"%s",gl_formatnor_info1);
+	snprintf(msg, sizeof(msg),"%s",gl_formatnor_info1);
 
 	DrawHZText12(msg,0,60,90+13,gl_color_text,1);
 
@@ -338,25 +338,28 @@ u32 Loadfile2NOR(TCHAR *filename, u32 NORaddress,u16 have_patch,u8 SAVEMODE)
 		tmpNorFS.is_64MBrom = flag_64MBrom;
 		tmpNorFS.savemode = SAVEMODE;
 		
-		sprintf(tmpNorFS.filename,"%s",filename);
+		snprintf(tmpNorFS.filename, sizeof(tmpNorFS.filename),"%s",filename);
 		dmaCopy(&tmpNorFS,&pNorFS[game_total_NOR], sizeof(FM_NOR_FS));
  
 		Clear(60,160-15,120,15,gl_color_cheat_black,1);	
 		DrawHZText12(gl_writing,0,70,160-15,0x7fff,1);	
 		for(blocknum=0;blocknum<filesize;blocknum+=0x20000)
 		{		
-			sprintf(msg,"%luMb/%luMb",(blocknum)/0x20000,filesize/0x20000);
+			snprintf(msg, sizeof(msg),"%luMb/%luMb",(blocknum)/0x20000,filesize/0x20000);
 			Clear(70+54,160-15,100,15,gl_color_cheat_black,1);
 			DrawHZText12(msg,0,70+54,160-15,0x7fff,1);
 			Block_Erase(blocknum+NORaddress);
 
 			f_lseek(&gfile, blocknum);
+			ret = 0;
 			f_read(&gfile, pReadCache, 0x20000, (UINT *)&ret);//pReadCache max 0x20000 Byte
+			if(ret < 0x20000)
+				memset(pReadCache + ret, 0xFF, 0x20000 - ret);
 			if(have_patch){
 				if((gl_reset_on==1) || (gl_rts_on==1) || (gl_sleep_on==1) || (gl_cheat_on==1))		    
 				{
-					PatchInternal((u32*)pReadCache,0x20000,blocknum);	
-					GBApatch_NOR((u32*)pReadCache,0x20000,blocknum);//some nes need check				
+					PatchInternal((u32*)pReadCache,ret,blocknum);	
+					GBApatch_NOR((u32*)pReadCache,filesize,blocknum);//some nes need check				
 				}
 			}
 			else{
@@ -384,7 +387,8 @@ u32 Loadfile2NOR(TCHAR *filename, u32 NORaddress,u16 have_patch,u8 SAVEMODE)
 			if(add_patch)
 			{
 				Block_Erase(blocknum+NORaddress);
-				GBApatch_NOR((u32*)pReadCache,0x20000,blocknum);
+				memset(pReadCache, 0xFF, 0x20000);
+				GBApatch_NOR((u32*)pReadCache,filesize,blocknum);
 				if (gl_cheat_on == 1)
 				{
 					NOR_ROM_WRITE_CONTEXT rom_write_context;

@@ -1,0 +1,23 @@
+# DS Style GBA Auto Patch
+# Plain-text external game compatibility profile.
+# IRQ32 uses ROM BYTE offsets and is validated against 03007FFC/03FFFFFC.
+# ADD32 feeds the existing deferred Add2()/iPatchInfo2 pipeline.
+# PATCH16/PATCH32 are direct ROM writes; TRIM overrides patch placement.
+# SEARCH32PAIR is a bounded legacy search/write operation.
+FORMAT=2
+GAME=BGWJ
+
+VARIANT=1
+# SOURCE=1802 - Game Boy Wars Advance 1+2(JP).zip
+IRQ32=0000021C
+IRQ32=00000590
+IRQ32=0030021C
+IRQ32=00310EF8
+IRQ32=009153C4
+IRQ32=0094DBE8
+IRQ32=0098648C
+IRQ32=009BED30
+IRQ32=00B0F27C
+IRQ32=00B7B710
+IRQ32=00ECDDEC
+END

@@ -1,0 +1,18 @@
+# DS Style GBA Auto Patch
+# Plain-text external game compatibility profile.
+# IRQ32 uses ROM BYTE offsets and is validated against 03007FFC/03FFFFFC.
+# ADD32 feeds the existing deferred Add2()/iPatchInfo2 pipeline.
+# PATCH16/PATCH32 are direct ROM writes; TRIM overrides patch placement.
+# SEARCH32PAIR is a bounded legacy search/write operation.
+FORMAT=2
+GAME=AWRP
+
+VARIANT=1
+# SOURCE=0263 - Advance Wars(EU).zip
+IRQ32=0000F270
+IRQ32=0007B90C
+IRQ32=004E0EE0
+IRQ32=0051AF50
+IRQ32=0055505C
+IRQ32=0058F018
+END

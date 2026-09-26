@@ -1,0 +1,17 @@
+# DS Style GBA Auto Patch
+# Plain-text external game compatibility profile.
+# IRQ32 uses ROM BYTE offsets and is validated against 03007FFC/03FFFFFC.
+# ADD32 feeds the existing deferred Add2()/iPatchInfo2 pipeline.
+# PATCH16/PATCH32 are direct ROM writes; TRIM overrides patch placement.
+# SEARCH32PAIR is a bounded legacy search/write operation.
+FORMAT=2
+GAME=ACME
+
+VARIANT=1
+# SOURCE=0961 - Colin McRae Rally 2.0(US).zip
+IRQ32=000000FC
+IRQ32=00003274
+IRQ32=003A81F0
+IRQ32=003A9DD8
+IRQ32=003AA024
+END

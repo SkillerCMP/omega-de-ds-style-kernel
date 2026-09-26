@@ -1,0 +1,18 @@
+# DS Style GBA Auto Patch
+# Plain-text external game compatibility profile.
+# IRQ32 uses ROM BYTE offsets and is validated against 03007FFC/03FFFFFC.
+# ADD32 feeds the existing deferred Add2()/iPatchInfo2 pipeline.
+# PATCH16/PATCH32 are direct ROM writes; TRIM overrides patch placement.
+# SEARCH32PAIR is a bounded legacy search/write operation.
+FORMAT=2
+GAME=BFBP
+
+VARIANT=1
+# SOURCE=2325 - 2 Games in 1 - Disney Sports - Football + Disney Sports - Skateboarding(EU).zip
+IRQ32=000001C4
+IRQ32=00000274
+IRQ32=000100FC
+IRQ32=00010310
+IRQ32=010000FC
+IRQ32=01000318
+END

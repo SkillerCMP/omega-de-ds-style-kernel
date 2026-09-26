@@ -1,0 +1,30 @@
+# DS Style GBA Auto Patch
+# Plain-text external game compatibility profile.
+# IRQ32 uses ROM BYTE offsets and is validated against 03007FFC/03FFFFFC.
+# ADD32 feeds the existing deferred Add2()/iPatchInfo2 pipeline.
+# PATCH16/PATCH32 are direct ROM writes; TRIM overrides patch placement.
+# SEARCH32PAIR is a bounded legacy search/write operation.
+FORMAT=2
+GAME=B3DJ
+
+VARIANT=1
+# SOURCE=1609 - Densetsu no Stafy 3(JP).zip
+IRQ32=0000238C
+IRQ32=0031CCC0
+IRQ32=0034470C
+IRQ32=00371348
+IRQ32=003981A4
+IRQ32=003C15EC
+IRQ32=004099C0
+END
+
+VARIANT=2
+# SOURCE=2818 - Densetsu no Stafy 3(JP).zip
+IRQ32=0000238C
+IRQ32=0031CD7C
+IRQ32=003447C8
+IRQ32=00371404
+IRQ32=00398260
+IRQ32=003C16A8
+IRQ32=00409A7C
+END

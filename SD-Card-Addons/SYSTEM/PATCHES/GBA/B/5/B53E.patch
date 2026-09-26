@@ -1,0 +1,20 @@
+# DS Style GBA Auto Patch
+# Plain-text external game compatibility profile.
+# IRQ32 uses ROM BYTE offsets and is validated against 03007FFC/03FFFFFC.
+# ADD32 feeds the existing deferred Add2()/iPatchInfo2 pipeline.
+# PATCH16/PATCH32 are direct ROM writes; TRIM overrides patch placement.
+# SEARCH32PAIR is a bounded legacy search/write operation.
+FORMAT=2
+GAME=B53E
+
+VARIANT=1
+# SOURCE=2421 - 2 Games in 1 - Spyro Orange - The Cortex Conspiracy + Crash Bandicoot Purple - Ripto's Rampage(US).zip
+IRQ32=0000BCE4
+IRQ32=00F6AC78
+IRQ32=00F8CBB0
+IRQ32=00FBB11C
+IRQ32=00FBB398
+IRQ32=0100AED8
+IRQ32=01F08978
+IRQ32=01F2A884
+END

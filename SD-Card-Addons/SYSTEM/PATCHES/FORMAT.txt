@@ -1,0 +1,38 @@
+DS Style - External GBA Auto Patch text format v2
+
+Required header:
+  FORMAT=2
+  GAME=BPRE
+
+For non-alphanumeric four-byte game codes the exporter uses GAMEHEX instead.
+Variants remain in legacy priority order and end with END.
+
+Directives:
+  IRQ32=offset
+      ROM BYTE offset of an IRQ pointer. A candidate variant is accepted only
+      when every applicable IRQ32 location contains 03007FFC or 03FFFFFC.
+      Accepted entries become Add2(offset / 4, 03007FF4).
+  NO_IRQ=1
+      This variant intentionally has no reset/IRQ relocation sites.
+  ADD32=offset,value
+      Deferred 32-bit compatibility record sent through Add2()/iPatchInfo2.
+  PATCH16=offset,value
+  PATCH32=offset,value
+      Direct boot-time ROM writes.
+  TRIM=size
+      Exact legacy trim-size override.
+  SEARCH32PAIR=start,length,word0,word1,write_delta,replacement
+      Bounded pair search/write operation.
+
+Lines beginning with # and blank lines are ignored. Disabled Fire Emblem
+research is preserved only as # comments and is never executed.
+
+Selection:
+  - The first IRQ-safe variant wins.
+  - A missing file or a file with no safe IRQ variant routes normal IRQ
+    relocation to the generic ROM scanner.
+  - Game-specific ADD32/PATCH/TRIM/SEARCH compatibility behavior is external;
+    install the v2 PATCHES database for full compatibility behavior.
+
+The compiled reset table and the old game-specific switch statements are not
+runtime compatibility sources.

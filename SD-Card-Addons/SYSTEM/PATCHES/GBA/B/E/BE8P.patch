@@ -1,0 +1,31 @@
+# DS Style GBA Auto Patch
+# Plain-text external game compatibility profile.
+# IRQ32 uses ROM BYTE offsets and is validated against 03007FFC/03FFFFFC.
+# ADD32 feeds the existing deferred Add2()/iPatchInfo2 pipeline.
+# PATCH16/PATCH32 are direct ROM writes; TRIM overrides patch placement.
+# SEARCH32PAIR is a bounded legacy search/write operation.
+FORMAT=2
+GAME=BE8P
+
+VARIANT=1
+# SOURCE=2215 - Fire Emblem - The Sacred Stones(EU).zip
+IRQ32=0000021C
+IRQ32=00000B78
+END
+
+# ============================================================
+# STATUS=DISABLED_LEGACY
+# DO_NOT_ENABLE_WITHOUT_HARDWARE_TESTING
+# Legacy Check_Fire_Emblem() research preserved as comments only.
+# TITLE=2215 - Fire Emblem - The Sacred Stones (EU)
+# PATCH_BLOB=Fire_Emblem_B
+# PATCH_ADDRESS=01FFDD00
+# HOOK_REPLACEMENT_WORD0=47004800
+# FIRE_EMBLEM_HOOK32=000A5738,47004800,09FFDD01
+# FIRE_EMBLEM_HOOK32=000A5790,47004800,09FFDD0F
+# FIRE_EMBLEM_HOOK32=000A5914,47004800,09FFDD1D
+# FIRE_EMBLEM_HOOK32=000A5A34,47004800,09FFDD1D
+# FIRE_EMBLEM_HOOK32=000A64F0,47004800,09FFDD2D
+# PATCH_BLOB_MODIFY_VALUE=080B670F
+# AUTO_SAVE_LEGACY_BEHAVIOR=DISABLE_WHEN_PATCH_ACTIVE
+# ============================================================

@@ -1,0 +1,17 @@
+# DS Style GBA Auto Patch
+# Plain-text external game compatibility profile.
+# IRQ32 uses ROM BYTE offsets and is validated against 03007FFC/03FFFFFC.
+# ADD32 feeds the existing deferred Add2()/iPatchInfo2 pipeline.
+# PATCH16/PATCH32 are direct ROM writes; TRIM overrides patch placement.
+# SEARCH32PAIR is a bounded legacy search/write operation.
+FORMAT=2
+GAME=BZPJ
+
+VARIANT=1
+# SOURCE=2127 - Dr. Mario & Panel de Pon(JP).zip
+IRQ32=0000463C
+IRQ32=00125830
+IRQ32=003CEE50
+IRQ32=004035B8
+IRQ32=00485044
+END

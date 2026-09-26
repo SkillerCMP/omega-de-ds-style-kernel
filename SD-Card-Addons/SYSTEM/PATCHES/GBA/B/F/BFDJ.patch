@@ -1,0 +1,20 @@
+# DS Style GBA Auto Patch
+# Plain-text external game compatibility profile.
+# IRQ32 uses ROM BYTE offsets and is validated against 03007FFC/03FFFFFC.
+# ADD32 feeds the existing deferred Add2()/iPatchInfo2 pipeline.
+# PATCH16/PATCH32 are direct ROM writes; TRIM overrides patch placement.
+# SEARCH32PAIR is a bounded legacy search/write operation.
+FORMAT=2
+GAME=BFDJ
+
+VARIANT=1
+# SOURCE=1730 - Fruit Mura no Doubutsutachi(JP).zip
+IRQ32=00000208
+IRQ32=00001370
+END
+
+VARIANT=2
+# SOURCE=2816 - Fruit Mura no Doubutsu Tachi(JP).zip
+IRQ32=00000208
+IRQ32=00001370
+END

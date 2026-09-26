@@ -1,0 +1,29 @@
+# DS Style GBA Auto Patch
+# Plain-text external game compatibility profile.
+# IRQ32 uses ROM BYTE offsets and is validated against 03007FFC/03FFFFFC.
+# ADD32 feeds the existing deferred Add2()/iPatchInfo2 pipeline.
+# PATCH16/PATCH32 are direct ROM writes; TRIM overrides patch placement.
+# SEARCH32PAIR is a bounded legacy search/write operation.
+FORMAT=2
+GAME=APUJ
+
+VARIANT=1
+# SOURCE=0667 - PukuPuku Tennen Kairanban(JP).zip
+IRQ32=000000FC
+IRQ32=00000640
+IRQ32=00056854
+IRQ32=0008D19C
+IRQ32=0008D6A0
+IRQ32=00092748
+IRQ32=00092BB0
+IRQ32=000ADBA8
+IRQ32=000AE020
+IRQ32=000CB6BC
+IRQ32=000CBB2C
+IRQ32=000EACE8
+IRQ32=000EB158
+IRQ32=00108E58
+IRQ32=001092D0
+IRQ32=0012AE88
+IRQ32=0012B2F0
+END

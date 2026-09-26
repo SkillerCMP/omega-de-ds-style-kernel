@@ -1,0 +1,20 @@
+# DS Style GBA Auto Patch
+# Plain-text external game compatibility profile.
+# IRQ32 uses ROM BYTE offsets and is validated against 03007FFC/03FFFFFC.
+# ADD32 feeds the existing deferred Add2()/iPatchInfo2 pipeline.
+# PATCH16/PATCH32 are direct ROM writes; TRIM overrides patch placement.
+# SEARCH32PAIR is a bounded legacy search/write operation.
+FORMAT=2
+GAME=ZMDE
+
+VARIANT=1
+# SOURCE=2633 - Nintendo MP3 Player(US).zip
+IRQ32=00047E48
+IRQ32=000CBA08
+IRQ32=00147E48
+IRQ32=001CBA08
+IRQ32=00247E48
+IRQ32=002CBA08
+IRQ32=00347E48
+IRQ32=003CBA08
+END

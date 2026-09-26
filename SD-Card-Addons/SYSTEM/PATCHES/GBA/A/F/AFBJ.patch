@@ -1,0 +1,20 @@
+# DS Style GBA Auto Patch
+# Plain-text external game compatibility profile.
+# IRQ32 uses ROM BYTE offsets and is validated against 03007FFC/03FFFFFC.
+# ADD32 feeds the existing deferred Add2()/iPatchInfo2 pipeline.
+# PATCH16/PATCH32 are direct ROM writes; TRIM overrides patch placement.
+# SEARCH32PAIR is a bounded legacy search/write operation.
+FORMAT=2
+GAME=AFBJ
+
+VARIANT=1
+# SOURCE=1087 - Frogger - Mahou no Kuni no Daibouken(JP).zip
+IRQ32=000000FC
+IRQ32=000003F8
+IRQ32=0074DE18
+IRQ32=00753A98
+IRQ32=007807A4
+IRQ32=00786424
+IRQ32=007B7A0C
+IRQ32=007BD68C
+END

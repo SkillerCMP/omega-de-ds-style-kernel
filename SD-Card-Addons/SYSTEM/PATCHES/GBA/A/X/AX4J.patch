@@ -1,0 +1,41 @@
+# DS Style GBA Auto Patch
+# Plain-text external game compatibility profile.
+# IRQ32 uses ROM BYTE offsets and is validated against 03007FFC/03FFFFFC.
+# ADD32 feeds the existing deferred Add2()/iPatchInfo2 pipeline.
+# PATCH16/PATCH32 are direct ROM writes; TRIM overrides patch placement.
+# SEARCH32PAIR is a bounded legacy search/write operation.
+FORMAT=2
+GAME=AX4J
+
+VARIANT=1
+# SOURCE=1093 - Super Mario Advance 4(JP).zip
+IRQ32=00000278
+IRQ32=00002B90
+IRQ32=000CEDD8
+IRQ32=000E7D4C
+IRQ32=000E7EC0
+IRQ32=000FA05C
+IRQ32=000FA3DC
+END
+
+VARIANT=2
+# SOURCE=2685 - Super Mario Advance 4(JP).zip
+IRQ32=00000278
+IRQ32=00002B90
+IRQ32=000D0B84
+IRQ32=000E99B0
+IRQ32=000E9B24
+IRQ32=000FBCC0
+IRQ32=000FC044
+END
+
+VARIANT=3
+# SOURCE=2817 - Super Mario Advance 4(JP).zip
+IRQ32=00000278
+IRQ32=00002B90
+IRQ32=000D05D8
+IRQ32=000E9404
+IRQ32=000E9578
+IRQ32=000FB714
+IRQ32=000FBA98
+END

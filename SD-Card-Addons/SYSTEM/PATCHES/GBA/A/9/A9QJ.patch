@@ -1,0 +1,18 @@
+# DS Style GBA Auto Patch
+# Plain-text external game compatibility profile.
+# IRQ32 uses ROM BYTE offsets and is validated against 03007FFC/03FFFFFC.
+# ADD32 feeds the existing deferred Add2()/iPatchInfo2 pipeline.
+# PATCH16/PATCH32 are direct ROM writes; TRIM overrides patch placement.
+# SEARCH32PAIR is a bounded legacy search/write operation.
+FORMAT=2
+GAME=A9QJ
+
+VARIANT=1
+# SOURCE=0847 - Kururin Paradise(JP).zip
+IRQ32=00000230
+IRQ32=0000030C
+IRQ32=006B4590
+IRQ32=006B4650
+IRQ32=0079E1C4
+IRQ32=0079E2C4
+END

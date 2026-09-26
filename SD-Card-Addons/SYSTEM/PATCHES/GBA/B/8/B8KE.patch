@@ -1,0 +1,24 @@
+# DS Style GBA Auto Patch
+# Plain-text external game compatibility profile.
+# IRQ32 uses ROM BYTE offsets and is validated against 03007FFC/03FFFFFC.
+# ADD32 feeds the existing deferred Add2()/iPatchInfo2 pipeline.
+# PATCH16/PATCH32 are direct ROM writes; TRIM overrides patch placement.
+# SEARCH32PAIR is a bounded legacy search/write operation.
+FORMAT=2
+GAME=B8KE
+
+VARIANT=1
+# SOURCE=1716 - Kirby & The Amazing Mirror(US).zip
+IRQ32=000001C0
+IRQ32=00151C14
+IRQ32=00D72188
+IRQ32=00D7AC40
+IRQ32=00D94D5C
+IRQ32=00D9D830
+IRQ32=00E1FFE8
+IRQ32=00E29B94
+IRQ32=00E57A58
+IRQ32=00E61C88
+IRQ32=00E84ACC
+IRQ32=00E8ED20
+END

@@ -1,4 +1,17 @@
 # DS Style 7.4c
+</p>
+<p align="center">
+  <a href="https://github.com/SkillerCMP/omega-de-ds-style-kernel/releases">
+    <img
+      alt="GitHub Downloads - All Releases"
+      src="https://img.shields.io/github/downloads/SkillerCMP/omega-de-ds-style-kernel/total?style=social"
+    >
+  </a>
+  <a href="https://github.com/SkillerCMP/omega-de-ds-style-kernel/releases/latest">
+    <img
+      alt="GitHub Downloads - Latest Release"
+      src="https://img.shields.io/github/downloads/SkillerCMP/omega-de-ds-style-kernel/latest/total?style=social"
+    >
 
 Source release for **DS Style 7.4c** for the EZ-FLASH OMEGA Definitive Edition.
 
